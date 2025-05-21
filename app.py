@@ -10,7 +10,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Clave secreta para JWT (usar variable de entorno en producción)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'miligan_tennis_secret_key_2025')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'miligan_secret_2025')
 
 # Credenciales de administrador (usar variables de entorno en producción)
 ADMIN_CREDENTIALS = {
