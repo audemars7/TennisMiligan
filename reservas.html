@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reservas - Miligan Tennis Academy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-green: #2E7D32;
+            --light-gray: #f5f5f5;
+            --border-radius: 8px;
+            --danger-color: #dc3545;
+            --danger-hover: #c82333;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: #f9f9f9;
+            min-height: 100vh;
+        }
+
+        .hero-image {
+            width: 100%;
+            height: 200px;
+            background-image: url('https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hero-title {
+            color: white;
+            font-size: 2.5em;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: -50px auto 0;
+            padding: 20px;
+            position: relative;
+        }
+
+        .main-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .btn-primary {
+            background: var(--primary-green);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1b5e20;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+
+        .btn-danger:hover {
+            background: var(--danger-hover);
+        }
+
+        .filters {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .filter-group {
+            flex: 1;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 1em;
+        }
+
+        .reservas-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .reservas-table th {
+            background: var(--light-gray);
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .reservas-table td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            color: #666;
+        }
+
+        .reservas-table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .empty-state p {
+            margin: 10px 0;
+            font-size: 1.1em;
+        }
+
+        .mensaje {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: var(--border-radius);
+            text-align: center;
+        }
+
+        .exito {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        @media (max-width: 768px) {
+            .filters {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .header-actions {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-image">
+        <div class="hero-overlay">
+            <h1 class="hero-title">Reservas Actuales</h1>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="main-card">
+            <div class="header-actions">
+                <h2>Todas las reservas</h2>
+                <div style="display: flex; gap: 10px;">
+                    <a href="index.html" class="btn btn-primary">← Volver a la página principal</a>
+                    <button onclick="cerrarSesion()" class="btn btn-danger">Cerrar Sesión</button>
+                </div>
+            </div>
+
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="fecha-filtro">Filtrar por fecha:</label>
+                    <input type="date" id="fecha-filtro" class="filter-input">
+                </div>
+                <div class="filter-group">
+                    <label for="cancha-filtro">Filtrar por cancha:</label>
+                    <select id="cancha-filtro" class="filter-input">
+                        <option value="">Todas las canchas</option>
+                        <option value="Cancha 1">Cancha 1</option>
+                        <option value="Cancha 2">Cancha 2</option>
+                    </select>
+                </div>
+            </div>
+
+            <table class="reservas-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Hora</th>
+                        <th>Cancha</th>
+                        <th>Cliente</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-reservas">
+                    <!-- Se llenará dinámicamente -->
+                </tbody>
+            </table>
+
+            <div id="empty-state" class="empty-state" style="display: none;">
+                <p>No hay reservas que coincidan con los filtros seleccionados.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // URL base de la API (cambiar en producción)
+        const API_URL = 'https://tennismiligan.onrender.com';  // URL de producción en Render
+
+        let reservasActuales = [];
+
+        // Función para obtener la fecha actual (forzada a 20/05/2025 para pruebas)
+        function obtenerFechaActual() {
+            return '2025-05-20';
+        }
+
+        // Función para cerrar sesión
+        function cerrarSesion() {
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        }
+
+        // Verificar autenticación
+        function verificarAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+            return token;
+        }
+
+        // Función para hacer peticiones autenticadas
+        async function fetchAuth(url, options = {}) {
+            const token = verificarAuth();
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                ...options.headers
+            };
+
+            try {
+                const response = await fetch(url, { ...options, headers });
+                if (response.status === 401) {
+                    // Token inválido o expirado
+                    localStorage.removeItem('token');
+                    window.location.href = 'login.html';
+                    return;
+                }
+                return response;
+            } catch (error) {
+                console.error('Error en la petición:', error);
+                throw error;
+            }
+        }
+
+        function formatearFecha(fecha) {
+            const opciones = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                timeZone: 'UTC'
+            };
+            const fechaObj = new Date(fecha + 'T00:00:00Z');
+            return fechaObj.toLocaleDateString('es-ES', opciones);
+        }
+
+        function mostrarMensaje(texto, esExito) {
+            const mensaje = document.createElement('div');
+            mensaje.textContent = texto;
+            mensaje.className = `mensaje ${esExito ? 'exito' : 'error'}`;
+            document.querySelector('.main-card').insertBefore(
+                mensaje,
+                document.querySelector('.filters')
+            );
+            setTimeout(() => mensaje.remove(), 3000);
+        }
+
+        function eliminarReserva(id) {
+            if (confirm('¿Estás seguro de que deseas eliminar esta reserva?')) {
+                fetchAuth(`${API_URL}/reservas/${id}`, {
+                    method: 'DELETE'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => Promise.reject(data));
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    mostrarMensaje(data.mensaje || 'Reserva eliminada con éxito', true);
+                    cargarReservas();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    mostrarMensaje(error.mensaje || 'Error al eliminar la reserva', false);
+                });
+            }
+        }
+
+        function actualizarTablaReservas() {
+            const tabla = document.getElementById('tabla-reservas');
+            const emptyState = document.getElementById('empty-state');
+            const fechaFiltro = document.getElementById('fecha-filtro').value;
+            const canchaFiltro = document.getElementById('cancha-filtro').value;
+
+            let reservasFiltradas = [...reservasActuales];
+
+            if (fechaFiltro) {
+                reservasFiltradas = reservasFiltradas.filter(r => r.fecha === fechaFiltro);
+            }
+
+            if (canchaFiltro) {
+                reservasFiltradas = reservasFiltradas.filter(r => r.cancha === canchaFiltro);
+            }
+
+            if (reservasFiltradas.length === 0) {
+                tabla.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            tabla.innerHTML = reservasFiltradas.map(reserva => `
+                <tr>
+                    <td>${formatearFecha(reserva.fecha)}</td>
+                    <td>${reserva.horario}</td>
+                    <td>${reserva.cancha}</td>
+                    <td>${reserva.nombre}</td>
+                    <td>
+                        <button onclick="eliminarReserva(${reserva.id})" class="btn btn-danger">
+                            Eliminar
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // ... existing code ...
+    </script>
+</body>
+</html>
