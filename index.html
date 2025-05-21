@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Miligan Tennis Academy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-green: #2E7D32;
+            --light-gray: #f5f5f5;
+            --border-radius: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: #f9f9f9;
+        }
+
+        .hero-image {
+            width: 100%;
+            height: 300px;
+            background-image: url('https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hero-title {
+            color: white;
+            font-size: 3em;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: -50px auto 0;
+            padding: 20px;
+            position: relative;
+        }
+
+        .main-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .date-selector {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 1em;
+            margin-bottom: 20px;
+            color: #333;
+            background-color: white;
+        }
+
+        .date-selector::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            padding: 5px;
+            filter: invert(0.4);
+        }
+
+        .date-selector::-webkit-calendar-picker-indicator:hover {
+            filter: invert(0.6);
+        }
+
+        .reservas-grid {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .reservas-grid th {
+            background: var(--light-gray);
+            padding: 12px;
+            text-align: left;
+        }
+
+        .reservas-grid td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+
+        .btn-disponible {
+            background: var(--primary-green);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-reservado {
+            background: #dc3545;
+            color: white;
+            width: 100%;
+            cursor: not-allowed;
+        }
+
+        .btn-disponible:hover {
+            background: #1b5e20;
+        }
+
+        .location-section {
+            margin-top: 30px;
+        }
+
+        .map-container {
+            height: 300px;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .map-container iframe {
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+
+        .whatsapp-button {
+            display: inline-flex;
+            align-items: center;
+            background: #25D366;
+            color: white;
+            padding: 12px 24px;
+            border-radius: var(--border-radius);
+            text-decoration: none;
+            margin-top: 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .whatsapp-button:hover {
+            background: #128C7E;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .whatsapp-button img {
+            width: 24px;
+            height: 24px;
+            margin-right: 10px;
+            filter: brightness(0) invert(1);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .mensaje {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: var(--border-radius);
+            text-align: center;
+        }
+
+        .exito {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .btn-maps {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #4285f4;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+
+        .btn-maps:hover {
+            background-color: #3367d6;
+        }
+
+        .map-container {
+            text-align: center;
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: var(--border-radius);
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: inline-block;
+            font-weight: 500;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-image">
+        <div class="hero-overlay">
+            <h1 class="hero-title">MILIGAN TENNIS ACADEMY</h1>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="main-card">
+            <div class="header-actions">
+                <h2>Elige la cancha</h2>
+                <a href="reservas.html" class="btn btn-secondary">Ver todas las reservas</a>
+            </div>
+            
+            <input type="date" class="date-selector" id="fecha" min="">
+
+            <table class="reservas-grid">
+                <thead>
+                    <tr>
+                        <th>Hora</th>
+                        <th>Cancha 1</th>
+                        <th>Cancha 2</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-reservas">
+                    <!-- Se llenará dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="main-card location-section">
+            <h2>Dónde estamos</h2>
+            <div class="map-container" id="map-container">
+                <!-- El iframe se insertará dinámicamente -->
+            </div>
+            <a id="whatsapp-link" class="whatsapp-button" target="_blank">
+                <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSIjRkZGRkZGIiBkPSJNMy4xNiAyMS4wNGMtLjA4LS4wNS0uMTctLjEtLjI1LS4xNmwtLjA1LS4wMy0uMDEtLjAxYy0uMTItLjA4LS4yMy0uMTctLjM0LS4yNmwtLjAzLS4wMmMtLjExLS4wOS0uMjItLjE4LS4zMi0uMjhsLS4wMi0uMDJjLS4xLS4wOS0uMi0uMTktLjI5LS4yOWwtLjAyLS4wMmMtLjA5LS4xLS4xOC0uMi0uMjYtLjMxbC0uMDItLjAzYy0uMDgtLjEtLjE2LS4yMS0uMjQtLjMyLS4wMS0uMDItLjAzLS4wNC0uMDQtLjA2LS4wOC0uMTEtLjE1LS4yMy0uMjItLjM1bC0uMDMtLjA1Yy0uMDctLjEyLS4xMy0uMjQtLjE5LS4zN2wtLjAyLS4wNGMtLjA2LS4xMy0uMTEtLjI2LS4xNi0uMzlsLS4wMS0uMDNjLS4wNS0uMTMtLjA5LS4yNy0uMTMtLjQxdi0uMDFjLS4wNC0uMTQtLjA3LS4yOC0uMS0uNDJ2LS4wMmMtLjAzLS4xNC0uMDUtLjI4LS4wNy0uNDJ2LS4wMmMtLjAyLS4xNC0uMDMtLjI5LS4wNC0uNDR2LS4wMmMtLjAxLS4xNS0uMDEtLjI5LS4wMS0uNDR2LS4wMmMwLS4xNS4wMS0uMy4wMi0uNDR2LS4wMmMuMDEtLjE1LjAzLS4yOS4wNS0uNDR2LS4wMmMuMDItLjE0LjA1LS4yOS4wOC0uNDN2LS4wMWMuMDMtLjE1LjA3LS4yOS4xMS0uNDN2LS4wMWMuMDQtLjE0LjA5LS4yOC4xNC0uNDJsLjAxLS4wMmMuMDUtLjE0LjEtLjI3LjE2LS40bC4wMS0uMDJjLjA2LS4xMy4xMi0uMjYuMTktLjM5bC4wMS0uMDJjLjA3LS4xMy4xNC0uMjUuMjEtLjM3bC4wMS0uMDJjLjA4LS4xMi4xNi0uMjQuMjQtLjM2bC4wMS0uMDJjLjA4LS4xMi4xNy0uMjMuMjYtLjM0bC4wMS0uMDJjLjA5LS4xMS4xOS0uMjIuMjktLjMzbC4wMS0uMDFjLjEtLjExLjIxLS4yMS4zMi0uMzFsLjAxLS4wMWMuMTEtLjEuMjItLjE5LjM0LS4yOGwuMDEtLjAxYy4xMi0uMDkuMjQtLjE4LjM2LS4yNmwuMDEtLjAxYy4xMi0uMDguMjUtLjE2LjM4LS4yNGwuMDEtLjAxYy4xMy0uMDguMjYtLjE1LjQtLjIybC4wMS0uMDFjLjE0LS4wNy4yNy0uMTQuNDEtLjJsLjAxLS4wMWMuMTQtLjA2LjI4LS4xMi40My0uMTdsLjAxLS4wMWMuMTQtLjA1LjI5LS4xLjQ0LS4xNGguMDFjLjE1LS4wNC4zLS4wOC40NS0uMTFoLjAxYy4xNS0uMDMuMy0uMDYuNDYtLjA4aC4wMWMuMTUtLjAyLjMxLS4wNC40Ny0uMDVoLjAxYy4xNi0uMDEuMzEtLjAyLjQ3LS4wMmguMDJjLjE2IDAgLjMxLjAxLjQ3LjAyaC4wMWMuMTYuMDEuMzEuMDMuNDcuMDVoLjAxYy4xNS4wMi4zLjA1LjQ2LjA4aC4wMWMuMTUuMDMuMy4wNy40NS4xMWguMDFjLjE1LjA0LjI5LjA5LjQ0LjE0aC4wMWMuMTQuMDUuMjkuMTEuNDMuMTdsLjAxLjAxYy4xNC4wNi4yOC4xMy40MS4ybC4wMS4wMWMuMTMuMDcuMjcuMTQuNC4yMmwuMDEuMDFjLjEzLjA4LjI2LjE2LjM4LjI0bC4wMS4wMWMuMTIuMDguMjQuMTcuMzYuMjZsLjAxLjAxYy4xMi4wOS4yMy4xOC4zNC4yOGwuMDEuMDFjLjExLjEuMjIuMi4zMi4zMWwuMDEuMDFjLjEuMTEuMi4yMi4yOS4zM2wuMDEuMDFjLjA5LjExLjE4LjIzLjI2LjM0bC4wMS4wMmMuMDkuMTIuMTcuMjQuMjUuMzZsLjAxLjAyYy4wOC4xMi4xNS4yNS4yMi4zN2wuMDEuMDJjLjA3LjEzLjEzLjI2LjE5LjM5bC4wMS4wMmMuMDYuMTMuMTEuMjYuMTYuNGwuMDEuMDJjLjA1LjE0LjEuMjguMTQuNDJsLjAxLjAyYy4wNC4xNC4wOC4yOC4xMS40M3YuMDFjLjAzLjE0LjA2LjI5LjA4LjQzdi4wMWMuMDIuMTUuMDQuMy4wNS40NHYuMDJjLjAxLjE1LjAyLjMuMDIuNDR2LjAyYzAgLjE1IDAgLjI5LS4wMS40NHYuMDJjLS4wMS4xNS0uMDIuMjktLjA0LjQ0di4wMmMtLjAyLjE0LS4wNC4yOC0uMDcuNDJ2LjAyYy0uMDMuMTQtLjA2LjI4LS4xLjQydi4wMWMtLjA0LjE0LS4wOC4yOC0uMTMuNDF2LjAxYy0uMDUuMTMtLjEuMjYtLjE2LjM5bC0uMDEuMDNjLS4wNi4xMy0uMTIuMjUtLjE5LjM3bC0uMDIuMDRjLS4wNy4xMi0uMTQuMjQtLjIyLjM1LS4wMS4wMi0uMDMuMDQtLjA0LjA2LS4wOC4xMS0uMTYuMjItLjI0LjMyLS4wMS4wMS0uMDIuMDItLjAyLjAzLS4wOC4xMS0uMTcuMjEtLjI2LjMxbC0uMDIuMDJjLS4wOS4xLS4xOS4yLS4yOS4yOWwtLjAyLjAyYy0uMS4xLS4yMS4xOS0uMzIuMjhsLS4wMy4wMmMtLjExLjA5LS4yMi4xOC0uMzQuMjZsLS4wMS4wMS0uMDUuMDNjLS4wOC4wNi0uMTcuMTEtLjI1LjE2bC0uMDEuMDFjLS4wOC4wNS0uMTcuMS0uMjYuMTRsLS4wMS4wMWMtLjA5LjA1LS4xOC4wOS0uMjcuMTNsLS4wMS4wMWMtLjA5LjA0LS4xOC4wOC0uMjguMTFsLS4wMS4wMWMtLjA5LjAzLS4xOS4wNi0uMjguMDlsLS4wMS4wMWMtLjEuMDMtLjE5LjA1LS4yOS4wN2gtLjAxYy0uMS4wMi0uMi4wNC0uMy4wNmgtLjAxYy0uMS4wMi0uMi4wMy0uMy4wNGgtLjAxYy0uMS4wMS0uMi4wMi0uMy4wM2gtLjAxYy0uMS4wMS0uMi4wMS0uMy4wMmgtLjAxYy0uMS4wMS0uMi4wMS0uMy4wMWgtLjAyYy0uMS0uMDEtLjItLjAxLS4zLS4wMWgtLjAxYy0uMS0uMDEtLjItLjAyLS4zLS4wM2gtLjAxYy0uMS0uMDEtLjItLjAzLS4zLS4wNGgtLjAxYy0uMS0uMDItLjItLjA0LS4zLS4wNmgtLjAxYy0uMS0uMDItLjE5LS4wNS0uMjktLjA3aC0uMDFjLS4wOS0uMDMtLjE5LS4wNi0uMjgtLjA5bC0uMDEtLjAxYy0uMDktLjAzLS4xOC0uMDctLjI4LS4xMWwtLjAxLS4wMWMtLjA5LS4wNC0uMTgtLjA4LS4yNy0uMTNsLS4wMS0uMDFjLS4wOS0uMDQtLjE3LS4wOS0uMjYtLjE0bC0uMDEtLjAxeiIvPjwvc3ZnPg==" alt="WhatsApp">
+                Enviar mensaje por WhatsApp
+            </a>
+        </div>
+    </div>
+
+    <div class="modal" id="modal-reserva">
+        <div class="modal-content">
+            <h2>Hacer reserva</h2>
+            <form id="formulario-reserva">
+                <div class="form-group">
+                    <label for="nombre">Nombre:</label>
+                    <input type="text" id="nombre" required>
+                </div>
+                <input type="hidden" id="cancha">
+                <input type="hidden" id="horario">
+                <input type="hidden" id="fecha">
+                <button type="submit" class="btn btn-disponible">Confirmar reserva</button>
+            </form>
+        </div>
+    </div>
+
+  <script>
+        // URL base de la API (cambiar en producción)
+        const API_URL = 'https://tennismiligan.onrender.com';  // URL de producción en Render
+
+        let horariosDisponibles = [];
+        let reservasActuales = [];
+        let config = {};
+
+        // Verificar autenticación
+        function verificarAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+            return token;
+        }
+
+        // Función para hacer peticiones autenticadas
+        async function fetchAuth(url, options = {}) {
+            const token = verificarAuth();
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                ...options.headers
+            };
+
+            try {
+                const response = await fetch(url, { ...options, headers });
+                if (response.status === 401) {
+                    // Token inválido o expirado
+                    localStorage.removeItem('token');
+                    window.location.href = 'login.html';
+                    return;
+                }
+                return response;
+            } catch (error) {
+                console.error('Error en la petición:', error);
+                throw error;
+            }
+        }
+
+        // Función para cerrar sesión
+        function cerrarSesion() {
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        }
+
+        // Añadir botón de cerrar sesión
+        const headerActions = document.querySelector('.header-actions');
+        const btnCerrarSesion = document.createElement('button');
+        btnCerrarSesion.className = 'btn btn-secondary';
+        btnCerrarSesion.textContent = 'Cerrar Sesión';
+        btnCerrarSesion.onclick = cerrarSesion;
+        headerActions.appendChild(btnCerrarSesion);
+
+        // Función para obtener la fecha actual (forzada a 20/05/2025 para pruebas)
+        function obtenerFechaActual() {
+            // Establecer fecha específica para pruebas
+            return '2025-05-20';
+        }
+
+        // Función para validar si una fecha es posterior a la fecha actual
+        function esFechaValida(fecha) {
+            const fechaActual = new Date('2025-05-20');
+            const fechaComparar = new Date(fecha);
+            fechaActual.setHours(0, 0, 0, 0);
+            fechaComparar.setHours(0, 0, 0, 0);
+            return fechaComparar >= fechaActual;
+        }
+
+        // Función para actualizar la fecha mínima y la fecha seleccionada
+        function actualizarFechas() {
+            const fechaInput = document.getElementById('fecha');
+            const fechaMinima = obtenerFechaActual();
+            
+            // Actualizar la fecha mínima
+            fechaInput.min = fechaMinima;
+
+            // Si no hay fecha seleccionada o la fecha es inválida, establecer la fecha actual
+            if (!fechaInput.value || !esFechaValida(fechaInput.value)) {
+                fechaInput.value = fechaMinima;
+                cargarReservas();
+            }
+        }
+
+        // Inicializar fechas
+        const fechaInput = document.getElementById('fecha');
+        fechaInput.min = obtenerFechaActual();
+        fechaInput.value = obtenerFechaActual();
+
+        // Event listener para validar la fecha seleccionada
+        fechaInput.addEventListener('change', function() {
+            if (!esFechaValida(this.value)) {
+                mostrarMensaje('No se pueden seleccionar fechas anteriores al día actual', false);
+                this.value = obtenerFechaActual();
+            }
+            cargarReservas();
+        });
+
+        // Verificar y actualizar fechas cuando la pestaña se hace visible
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                actualizarFechas();
+            }
+        });
+
+        function formatearHora(hora) {
+            return hora.replace(' - ', '-');
+        }
+
+        function actualizarTablaReservas() {
+            const tabla = document.getElementById('tabla-reservas');
+            tabla.innerHTML = '';
+            const fechaSeleccionada = document.getElementById('fecha').value;
+
+            horariosDisponibles.forEach(horario => {
+                const fila = document.createElement('tr');
+                
+                // Columna de hora
+                const tdHora = document.createElement('td');
+                tdHora.textContent = horario;
+                fila.appendChild(tdHora);
+
+                // Columnas para cada cancha
+                ['Cancha 1', 'Cancha 2'].forEach(cancha => {
+                    const td = document.createElement('td');
+                    const reservaExistente = reservasActuales.find(r => 
+                        r.cancha === cancha && 
+                        r.horario === horario && 
+                        r.fecha === fechaSeleccionada
+                    );
+
+                    const btn = document.createElement('button');
+                    if (reservaExistente) {
+                        btn.className = 'btn btn-reservado';
+                        btn.textContent = 'Reservado';
+                        btn.disabled = true;
+                    } else {
+                        btn.className = 'btn btn-disponible';
+                        btn.textContent = 'Disponible';
+                        btn.onclick = () => mostrarModalReserva(cancha, horario, fechaSeleccionada);
+                    }
+                    td.appendChild(btn);
+                    fila.appendChild(td);
+                });
+
+                tabla.appendChild(fila);
+            });
+        }
+
+        function mostrarModalReserva(cancha, horario, fecha) {
+            const modal = document.getElementById('modal-reserva');
+            document.getElementById('cancha').value = cancha;
+            document.getElementById('horario').value = horario;
+            document.getElementById('fecha').value = fecha;
+            modal.style.display = 'flex';
+        }
+
+        function mostrarMensaje(texto, esExito) {
+            const mensaje = document.createElement('div');
+            mensaje.textContent = texto;
+            mensaje.className = `mensaje ${esExito ? 'exito' : 'error'}`;
+            document.querySelector('.main-card').insertBefore(
+                mensaje,
+                document.querySelector('.reservas-grid')
+            );
+            setTimeout(() => mensaje.remove(), 3000);
+        }
+
+        // Cargar horarios
+        fetchAuth(`${API_URL}/horarios`)
+            .then(response => response.json())
+            .then(horarios => {
+                horariosDisponibles = horarios;
+                actualizarTablaReservas();
+            });
+
+        // Cargar reservas
+        function cargarReservas() {
+            const fechaSeleccionada = document.getElementById('fecha').value;
+            fetchAuth(`${API_URL}/admin/reservas?fecha=${fechaSeleccionada}`)
+                .then(response => response.json())
+                .then(reservas => {
+                    reservasActuales = reservas;
+                    actualizarTablaReservas();
+                })
+                .catch(error => {
+                    mostrarMensaje('Error al cargar las reservas', false);
+                });
+        }
+
+        // Manejar el formulario de reserva
+        document.getElementById('formulario-reserva').onsubmit = function(e) {
+            e.preventDefault();
+            const reserva = {
+                nombre: document.getElementById('nombre').value,
+                cancha: document.getElementById('cancha').value,
+                horario: document.getElementById('horario').value,
+                fecha: document.getElementById('fecha').value
+            };
+
+            fetchAuth(`${API_URL}/reservar`, {
+                method: 'POST',
+                body: JSON.stringify(reserva)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => Promise.reject(data));
+                }
+                return response.json();
+            })
+            .then(data => {
+                mostrarMensaje(data.mensaje, true);
+                document.getElementById('modal-reserva').style.display = 'none';
+                document.getElementById('formulario-reserva').reset();
+                cargarReservas();
+            })
+            .catch(error => {
+                mostrarMensaje(error.mensaje || 'Error al hacer la reserva', false);
+            });
+        };
+
+        // Cerrar modal al hacer clic fuera
+        window.onclick = function(event) {
+            const modal = document.getElementById('modal-reserva');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
+
+        // Cargar datos iniciales
+        cargarReservas();
+
+        // Cargar configuración
+        function cargarConfiguracion() {
+            fetchAuth(`${API_URL}/config`)
+                .then(response => response.json())
+        .then(data => {
+                    config = data;
+                    actualizarContacto();
+                    actualizarMapa();
+                });
+        }
+
+        function actualizarContacto() {
+            const whatsappLink = document.getElementById('whatsapp-link');
+            whatsappLink.href = `https://wa.me/${config.whatsapp}`;
+        }
+
+        function actualizarMapa() {
+            const mapContainer = document.getElementById('map-container');
+            const iframe = document.createElement('iframe');
+            iframe.src = `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d975.7583770887669!2d${config.ubicacion.coordenadas.lng}!3d${config.ubicacion.coordenadas.lat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s${config.ubicacion.place_id}!2s${encodeURIComponent(config.ubicacion.direccion)}!5e0!3m2!1ses!2spe!4v1708476012345!5m2!1ses!2spe`;
+            iframe.style.border = "0";
+            iframe.style.width = "100%";
+            iframe.style.height = "450px";
+            iframe.style.borderRadius = "8px";
+            iframe.allowFullscreen = true;
+            iframe.loading = 'lazy';
+            iframe.referrerPolicy = 'no-referrer-when-downgrade';
+            mapContainer.innerHTML = '';
+            mapContainer.appendChild(iframe);
+
+            // Agregar enlace para abrir en Google Maps
+            const mapLink = document.createElement('a');
+            mapLink.href = `https://www.google.com/maps?q=${config.ubicacion.coordenadas.lat},${config.ubicacion.coordenadas.lng}`;
+            mapLink.className = "btn-maps";
+            mapLink.target = "_blank";
+            mapLink.textContent = "Abrir en Google Maps";
+            mapContainer.appendChild(mapLink);
+        }
+
+        // Verificar autenticación al cargar la página
+        verificarAuth();
+
+        // Modificar la función de inicio para cargar la configuración
+        window.addEventListener('DOMContentLoaded', () => {
+            cargarConfiguracion();
+            cargarHorarios();
+            cargarReservas();
+        });
+  </script>
+</body>
+</html>
+
