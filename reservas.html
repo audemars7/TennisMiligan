@@ -334,8 +334,9 @@
         }
 
         function eliminarReserva(id) {
+            console.log('ID a eliminar:', id);
             if (confirm('¿Estás seguro de que deseas eliminar esta reserva?')) {
-                fetchAuth(`${API_URL}/reservas/${id}`, {
+                fetchAuth(`${API_URL}/admin/reservas/${id}`, {
                     method: 'DELETE'
                 })
                 .then(response => {
@@ -385,7 +386,7 @@
                     <td>${reserva.cancha}</td>
                     <td>${reserva.nombre}</td>
                     <td>
-                        <button onclick="eliminarReserva(${reserva.id})" class="btn btn-danger">
+                        <button onclick="eliminarReserva('${reserva.id}')" class="btn btn-danger">
                             Eliminar
                         </button>
                     </td>
@@ -393,7 +394,29 @@
             `).join('');
         }
 
-        // ... existing code ...
+        async function cargarReservas() {
+            try {
+                const response = await fetchAuth(`${API_URL}/admin/reservas`);
+                if (!response.ok) {
+                    throw new Error('Error al cargar las reservas');
+                }
+                const data = await response.json();
+                reservasActuales = data;
+                actualizarTablaReservas();
+            } catch (error) {
+                console.error('Error:', error);
+                mostrarMensaje('Error al cargar las reservas', false);
+            }
+        }
+
+        // Cargar reservas al iniciar
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarReservas();
+            
+            // Agregar event listeners para los filtros
+            document.getElementById('fecha-filtro').addEventListener('change', actualizarTablaReservas);
+            document.getElementById('cancha-filtro').addEventListener('change', actualizarTablaReservas);
+        });
     </script>
 </body>
 </html>
