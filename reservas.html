@@ -335,7 +335,13 @@
         }
 
         function eliminarReserva(id) {
-            console.log('Tipo de ID:', typeof id, 'Valor:', id);
+            console.log('ID recibido para eliminar:', id, 'Tipo:', typeof id);
+            
+            if (!id || id === 'undefined') {
+                mostrarMensaje('Error: ID de reserva no válido', false);
+                return;
+            }
+            
             if (confirm('¿Estás seguro de que deseas eliminar esta reserva?')) {
                 fetchAuth(`${API_URL}/admin/reservas/${id}`, {
                     method: 'DELETE'
@@ -381,33 +387,51 @@
             }
 
             emptyState.style.display = 'none';
-            tabla.innerHTML = reservasFiltradas.map(reserva => `
+            
+            // Verificar que las reservas tengan ID antes de generar la tabla
+            console.log('Reservas a mostrar:', reservasFiltradas);
+            
+            tabla.innerHTML = reservasFiltradas.map(reserva => {
+                if (!reserva.id) {
+                    console.error('Reserva sin ID:', reserva);
+                }
+                return `
                 <tr>
                     <td>${formatearFecha(reserva.fecha)}</td>
                     <td>${reserva.horario}</td>
                     <td>Cancha ${reserva.cancha}</td>
                     <td>${reserva.nombre}</td>
                     <td>
-                        <button onclick="eliminarReserva(${reserva.id})" class="btn btn-danger">
+                        <button onclick="eliminarReserva(${reserva.id || 'null'})" class="btn btn-danger" ${!reserva.id ? 'disabled' : ''}>
                             Eliminar
                         </button>
                     </td>
                 </tr>
-            `).join('');
+                `;
+            }).join('');
         }
 
         async function cargarReservas() {
             try {
+                console.log('Cargando reservas desde:', `${API_URL}/admin/reservas`);
                 const response = await fetchAuth(`${API_URL}/admin/reservas`);
+                
                 if (!response.ok) {
-                    throw new Error('Error al cargar las reservas');
+                    throw new Error(`Error HTTP: ${response.status}`);
                 }
+                
                 const data = await response.json();
+                console.log('Datos recibidos del backend:', data);
+                
+                if (!Array.isArray(data)) {
+                    throw new Error('Los datos recibidos no son un array');
+                }
+                
                 reservasActuales = data;
                 actualizarTablaReservas();
             } catch (error) {
-                console.error('Error:', error);
-                mostrarMensaje('Error al cargar las reservas', false);
+                console.error('Error al cargar reservas:', error);
+                mostrarMensaje('Error al cargar las reservas: ' + error.message, false);
             }
         }
 

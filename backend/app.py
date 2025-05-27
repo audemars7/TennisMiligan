@@ -14,18 +14,13 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 app = Flask(__name__)
-# Configuración específica de CORS
-CORS(app, resources={
-    r"/*": {
-        "origins": [
-            "https://miligan-frontend.onrender.com",
-            "http://localhost:5000",
-            "http://127.0.0.1:5000"
-        ],
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"]
-    }
-})
+
+# Configuración completa de CORS
+CORS(app, 
+     origins=["https://miligan-frontend.onrender.com", "http://localhost:5000", "http://127.0.0.1:5000"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+     allow_headers=["Content-Type", "Authorization"],
+     supports_credentials=True)
 
 # Configuración de logging
 if not os.path.exists('logs'):
