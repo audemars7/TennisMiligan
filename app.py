@@ -211,17 +211,27 @@ def sanitizar_input(texto):
         return texto
     return re.sub(r'[<>"/\'%;()&+]', '', texto)
 
+def extraer_numero_cancha(cancha):
+    """Permite aceptar '1', '2', 'Cancha 1', 'Cancha 2', etc."""
+    if not cancha:
+        return None
+    match = re.search(r'(\d+)', str(cancha))
+    if match:
+        num = int(match.group(1))
+        if 1 <= num <= 4:
+            return str(num)
+    return None
+
 @app.route("/reservar", methods=["POST"])
 @token_required
 @limiter.limit("20 per hour")
 def hacer_reserva(current_user):
     data = request.get_json()
-    
     nombre = sanitizar_input(data.get("nombre"))
     cancha = sanitizar_input(data.get("cancha"))
     horario = data.get("horario")
     fecha = data.get("fecha", datetime.now().strftime("%Y-%m-%d"))
-    
+
     # Validaciones
     if not validar_nombre(nombre):
         return jsonify({"mensaje": "Nombre inválido"}), 400
@@ -229,7 +239,8 @@ def hacer_reserva(current_user):
         return jsonify({"mensaje": "Formato de horario inválido"}), 400
     if not validar_fecha(fecha):
         return jsonify({"mensaje": "Formato de fecha inválido"}), 400
-    if not cancha or not cancha.isdigit() or int(cancha) < 1 or int(cancha) > 4:
+    numero_cancha = extraer_numero_cancha(cancha)
+    if not numero_cancha:
         return jsonify({"mensaje": "Número de cancha inválido"}), 400
 
     conn = create_connection()
@@ -240,17 +251,14 @@ def hacer_reserva(current_user):
             cursor.execute("""
                 SELECT id FROM reservas 
                 WHERE cancha = ? AND horario = ? AND fecha = ? AND estado = 'activa'
-            """, (cancha, horario, fecha))
-            
+            """, (numero_cancha, horario, fecha))
             if cursor.fetchone() is not None:
                 return jsonify({"mensaje": "❌ Este horario ya está reservado para esta cancha"}), 400
-            
             # Insertar nueva reserva
             cursor.execute("""
                 INSERT INTO reservas (nombre, cancha, horario, fecha)
                 VALUES (?, ?, ?, ?)
-            """, (nombre, cancha, horario, fecha))
-            
+            """, (nombre, numero_cancha, horario, fecha))
             conn.commit()
             return jsonify({"mensaje": "✅ Reserva guardada correctamente"}), 201
         except Error as e:
