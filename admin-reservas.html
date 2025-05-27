@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrar Reservas - Miligan Tennis Academy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-green: #2E7D32;
+            --light-gray: #f5f5f5;
+            --border-radius: 8px;
+            --danger-color: #dc3545;
+            --danger-hover: #c82333;
+            --warning-color: #ffc107;
+            --warning-hover: #e0a800;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: #f9f9f9;
+            min-height: 100vh;
+        }
+
+        .hero-image {
+            width: 100%;
+            height: 200px;
+            background-image: url('https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hero-title {
+            color: white;
+            font-size: 2.5em;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: -50px auto 0;
+            padding: 20px;
+            position: relative;
+        }
+
+        .main-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            margin: 0 5px;
+        }
+
+        .btn-primary {
+            background: var(--primary-green);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1b5e20;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+
+        .btn-danger:hover {
+            background: var(--danger-hover);
+        }
+
+        .btn-warning {
+            background: var(--warning-color);
+            color: #212529;
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+
+        .btn-warning:hover {
+            background: var(--warning-hover);
+        }
+
+        .reservas-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .reservas-table th {
+            background: var(--light-gray);
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .reservas-table td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            color: #666;
+        }
+
+        .reservas-table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .mensaje {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: var(--border-radius);
+            text-align: center;
+        }
+
+        .exito {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            width: 80%;
+            max-width: 500px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: black;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-image">
+        <div class="hero-overlay">
+            <h1 class="hero-title">Administrar Reservas</h1>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="main-card">
+            <div class="header-actions">
+                <h2>Gestión de Reservas</h2>
+                <div style="display: flex; gap: 10px;">
+                    <a href="index.html" class="btn btn-primary">← Volver al inicio</a>
+                    <a href="reservas.html" class="btn btn-primary">Ver horarios</a>
+                    <button onclick="cerrarSesion()" class="btn btn-danger">Cerrar Sesión</button>
+                </div>
+            </div>
+
+            <table class="reservas-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Fecha</th>
+                        <th>Hora</th>
+                        <th>Cancha</th>
+                        <th>Cliente</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-reservas">
+                    <!-- Se llenará dinámicamente -->
+                </tbody>
+            </table>
+
+            <div id="empty-state" class="empty-state" style="display: none;">
+                <p>No hay reservas registradas.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar reserva -->
+    <div id="modalEditar" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Reserva</h3>
+                <span class="close" onclick="cerrarModal()">&times;</span>
+            </div>
+            <form id="formEditar">
+                <div class="form-group">
+                    <label for="nombreEditar">Nombre del cliente:</label>
+                    <input type="text" id="nombreEditar" required>
+                </div>
+                <div style="text-align: right;">
+                    <button type="button" onclick="cerrarModal()" class="btn btn-danger">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://tennismiligan.onrender.com';
+        let reservasActuales = [];
+        let reservaEditando = null;
+
+        function cerrarSesion() {
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        }
+
+        function verificarAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+            return token;
+        }
+
+        async function fetchAuth(url, options = {}) {
+            const token = verificarAuth();
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                ...options.headers
+            };
+
+            try {
+                const response = await fetch(url, { ...options, headers });
+                if (response.status === 401) {
+                    localStorage.removeItem('token');
+                    window.location.href = 'login.html';
+                    return;
+                }
+                return response;
+            } catch (error) {
+                console.error('Error en la petición:', error);
+                throw error;
+            }
+        }
+
+        function formatearFecha(fecha) {
+            const opciones = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                timeZone: 'UTC'
+            };
+            const fechaObj = new Date(fecha + 'T00:00:00Z');
+            return fechaObj.toLocaleDateString('es-ES', opciones);
+        }
+
+        function mostrarMensaje(texto, esExito) {
+            const mensaje = document.createElement('div');
+            mensaje.textContent = texto;
+            mensaje.className = `mensaje ${esExito ? 'exito' : 'error'}`;
+            document.querySelector('.main-card').insertBefore(
+                mensaje,
+                document.querySelector('.reservas-table')
+            );
+            setTimeout(() => mensaje.remove(), 3000);
+        }
+
+        function eliminarReserva(id) {
+            if (confirm('¿Estás seguro de que deseas eliminar esta reserva?')) {
+                fetchAuth(`${API_URL}/admin/reservas/${id}`, {
+                    method: 'DELETE'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => Promise.reject(data));
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    mostrarMensaje(data.mensaje || 'Reserva eliminada con éxito', true);
+                    cargarReservas();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    mostrarMensaje(error.mensaje || 'Error al eliminar la reserva', false);
+                });
+            }
+        }
+
+        function editarReserva(id) {
+            const reserva = reservasActuales.find(r => r.id === id);
+            if (reserva) {
+                reservaEditando = id;
+                document.getElementById('nombreEditar').value = reserva.nombre;
+                document.getElementById('modalEditar').style.display = 'block';
+            }
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalEditar').style.display = 'none';
+            reservaEditando = null;
+        }
+
+        function actualizarTablaReservas() {
+            const tabla = document.getElementById('tabla-reservas');
+            const emptyState = document.getElementById('empty-state');
+
+            if (reservasActuales.length === 0) {
+                tabla.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            tabla.innerHTML = reservasActuales.map(reserva => `
+                <tr>
+                    <td>${reserva.id}</td>
+                    <td>${formatearFecha(reserva.fecha)}</td>
+                    <td>${reserva.horario}</td>
+                    <td>Cancha ${reserva.cancha}</td>
+                    <td>${reserva.nombre}</td>
+                    <td><span style="color: ${reserva.estado === 'activa' ? 'green' : 'red'}">${reserva.estado}</span></td>
+                    <td>
+                        <button onclick="editarReserva(${reserva.id})" class="btn btn-warning">
+                            Editar
+                        </button>
+                        <button onclick="eliminarReserva(${reserva.id})" class="btn btn-danger">
+                            Eliminar
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function cargarReservas() {
+            try {
+                const response = await fetchAuth(`${API_URL}/admin/reservas`);
+                if (!response.ok) {
+                    throw new Error('Error al cargar las reservas');
+                }
+                const data = await response.json();
+                reservasActuales = data;
+                actualizarTablaReservas();
+            } catch (error) {
+                console.error('Error:', error);
+                mostrarMensaje('Error al cargar las reservas', false);
+            }
+        }
+
+        // Manejar envío del formulario de edición
+        document.getElementById('formEditar').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!reservaEditando) return;
+            
+            const nuevoNombre = document.getElementById('nombreEditar').value.trim();
+            
+            if (!nuevoNombre) {
+                mostrarMensaje('El nombre no puede estar vacío', false);
+                return;
+            }
+
+            try {
+                const response = await fetchAuth(`${API_URL}/admin/reservas/${reservaEditando}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ nombre: nuevoNombre })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.mensaje || 'Error al actualizar');
+                }
+
+                const data = await response.json();
+                mostrarMensaje(data.mensaje || 'Reserva actualizada con éxito', true);
+                cerrarModal();
+                cargarReservas();
+            } catch (error) {
+                console.error('Error:', error);
+                mostrarMensaje(error.message || 'Error al actualizar la reserva', false);
+            }
+        });
+
+        // Cargar reservas al iniciar
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarReservas();
+        });
+
+        // Cerrar modal al hacer clic fuera
+        window.onclick = function(event) {
+            const modal = document.getElementById('modalEditar');
+            if (event.target === modal) {
+                cerrarModal();
+            }
+        }
+    </script>
+</body>
+</html> 
