@@ -480,12 +480,22 @@
                         btn.className = 'btn btn-reservado';
                         btn.textContent = 'Reservado';
                         btn.disabled = true;
+                        
+                        const btnEliminar = document.createElement('button');
+                        btnEliminar.className = 'btn btn-danger';
+                        btnEliminar.textContent = 'Eliminar';
+                        btnEliminar.onclick = () => eliminarReserva(reservaExistente.id);
+                        
+                        const contenedor = document.createElement('div');
+                        contenedor.appendChild(btn);
+                        contenedor.appendChild(btnEliminar);
+                        td.appendChild(contenedor);
                     } else {
                         btn.className = 'btn btn-disponible';
                         btn.textContent = 'Disponible';
                         btn.onclick = () => mostrarModalReserva(cancha, horario, fechaSeleccionada);
+                        td.appendChild(btn);
                     }
-                    td.appendChild(btn);
                     fila.appendChild(td);
                 });
 
@@ -510,6 +520,27 @@
                 document.querySelector('.reservas-grid')
             );
             setTimeout(() => mensaje.remove(), 3000);
+        }
+
+        function eliminarReserva(id) {
+            if (confirm('¿Seguro que quieres eliminar esta reserva?')) {
+                fetchAuth(`${API_URL}/reservas/${id}`, {
+                    method: 'DELETE'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Error al eliminar');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    mostrarMensaje(data.mensaje || 'Reserva eliminada con éxito', true);
+                    cargarReservas();
+                })
+                .catch(err => {
+                    mostrarMensaje(err.message || 'Error al eliminar reserva', false);
+                });
+            }
         }
 
         // Cargar horarios

@@ -255,7 +255,6 @@
                         <th>Cancha</th>
                         <th>Cliente</th>
                         <th>Estado</th>
-                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="tabla-reservas">
@@ -269,30 +268,9 @@
         </div>
     </div>
 
-    <!-- Modal para editar reserva -->
-    <div id="modalEditar" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Editar Reserva</h3>
-                <span class="close" onclick="cerrarModal()">&times;</span>
-            </div>
-            <form id="formEditar">
-                <div class="form-group">
-                    <label for="nombreEditar">Nombre del cliente:</label>
-                    <input type="text" id="nombreEditar" required>
-                </div>
-                <div style="text-align: right;">
-                    <button type="button" onclick="cerrarModal()" class="btn btn-danger">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <script>
         const API_URL = 'https://tennismiligan.onrender.com';
         let reservasActuales = [];
-        let reservaEditando = null;
 
         function cerrarSesion() {
             localStorage.removeItem('token');
@@ -353,42 +331,6 @@
             setTimeout(() => mensaje.remove(), 3000);
         }
 
-        function eliminarReserva(id) {
-            if (confirm('¿Estás seguro de que deseas eliminar esta reserva?')) {
-                fetchAuth(`${API_URL}/admin/reservas/${id}`, {
-                    method: 'DELETE'
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        return response.json().then(data => Promise.reject(data));
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    mostrarMensaje(data.mensaje || 'Reserva eliminada con éxito', true);
-                    cargarReservas();
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    mostrarMensaje(error.mensaje || 'Error al eliminar la reserva', false);
-                });
-            }
-        }
-
-        function editarReserva(id) {
-            const reserva = reservasActuales.find(r => r.id === id);
-            if (reserva) {
-                reservaEditando = id;
-                document.getElementById('nombreEditar').value = reserva.nombre;
-                document.getElementById('modalEditar').style.display = 'block';
-            }
-        }
-
-        function cerrarModal() {
-            document.getElementById('modalEditar').style.display = 'none';
-            reservaEditando = null;
-        }
-
         function actualizarTablaReservas() {
             const tabla = document.getElementById('tabla-reservas');
             const emptyState = document.getElementById('empty-state');
@@ -408,14 +350,6 @@
                     <td>Cancha ${reserva.cancha}</td>
                     <td>${reserva.nombre}</td>
                     <td><span style="color: ${reserva.estado === 'activa' ? 'green' : 'red'}">${reserva.estado}</span></td>
-                    <td>
-                        <button onclick="editarReserva(${reserva.id})" class="btn btn-warning">
-                            Editar
-                        </button>
-                        <button onclick="eliminarReserva(${reserva.id})" class="btn btn-danger">
-                            Eliminar
-                        </button>
-                    </td>
                 </tr>
             `).join('');
         }
@@ -435,52 +369,10 @@
             }
         }
 
-        // Manejar envío del formulario de edición
-        document.getElementById('formEditar').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            if (!reservaEditando) return;
-            
-            const nuevoNombre = document.getElementById('nombreEditar').value.trim();
-            
-            if (!nuevoNombre) {
-                mostrarMensaje('El nombre no puede estar vacío', false);
-                return;
-            }
-
-            try {
-                const response = await fetchAuth(`${API_URL}/admin/reservas/${reservaEditando}`, {
-                    method: 'PUT',
-                    body: JSON.stringify({ nombre: nuevoNombre })
-                });
-
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.mensaje || 'Error al actualizar');
-                }
-
-                const data = await response.json();
-                mostrarMensaje(data.mensaje || 'Reserva actualizada con éxito', true);
-                cerrarModal();
-                cargarReservas();
-            } catch (error) {
-                console.error('Error:', error);
-                mostrarMensaje(error.message || 'Error al actualizar la reserva', false);
-            }
-        });
-
         // Cargar reservas al iniciar
         document.addEventListener('DOMContentLoaded', () => {
             cargarReservas();
         });
-
-        // Cerrar modal al hacer clic fuera
-        window.onclick = function(event) {
-            const modal = document.getElementById('modalEditar');
-            if (event.target === modal) {
-                cerrarModal();
-            }
-        }
     </script>
 </body>
 </html> 
