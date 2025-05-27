@@ -246,7 +246,6 @@
                         <th>Hora</th>
                         <th>Cancha</th>
                         <th>Cliente</th>
-                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="tabla-reservas">
@@ -335,36 +334,6 @@
             setTimeout(() => mensaje.remove(), 3000);
         }
 
-        function eliminarReserva(id) {
-            console.log('ID recibido para eliminar:', id, 'Tipo:', typeof id);
-            
-            if (!id || id === 'undefined') {
-                mostrarMensaje('Error: ID de reserva no válido', false);
-                return;
-            }
-            
-            if (confirm('¿Estás seguro de que deseas eliminar esta reserva?')) {
-                fetchAuth(`${API_URL}/admin/reservas/${id}`, {
-                    method: 'DELETE'
-                })
-                .then(response => {
-                    console.log('Respuesta del servidor:', response.status);
-                    if (!response.ok) {
-                        return response.json().then(data => Promise.reject(data));
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    mostrarMensaje(data.mensaje || 'Reserva eliminada con éxito', true);
-                    cargarReservas();
-                })
-                .catch(error => {
-                    console.error('Error completo:', error);
-                    mostrarMensaje(error.mensaje || 'Error al eliminar la reserva', false);
-                });
-            }
-        }
-
         function actualizarTablaReservas() {
             const tabla = document.getElementById('tabla-reservas');
             const emptyState = document.getElementById('empty-state');
@@ -389,32 +358,18 @@
 
             emptyState.style.display = 'none';
             
-            // Verificar que las reservas tengan ID antes de generar la tabla
-            console.log('Reservas a mostrar:', reservasFiltradas);
-            
-            tabla.innerHTML = reservasFiltradas.map(reserva => {
-                if (!reserva.id) {
-                    console.error('Reserva sin ID:', reserva);
-                }
-                return `
+            tabla.innerHTML = reservasFiltradas.map(reserva => `
                 <tr>
                     <td>${formatearFecha(reserva.fecha)}</td>
                     <td>${reserva.horario}</td>
                     <td>Cancha ${reserva.cancha}</td>
                     <td>${reserva.nombre}</td>
-                    <td>
-                        <button onclick="eliminarReserva(${reserva.id || 'null'})" class="btn btn-danger" ${!reserva.id ? 'disabled' : ''}>
-                            Eliminar
-                        </button>
-                    </td>
                 </tr>
-                `;
-            }).join('');
+            `).join('');
         }
 
         async function cargarReservas() {
             try {
-                console.log('Cargando reservas desde:', `${API_URL}/admin/reservas`);
                 const response = await fetchAuth(`${API_URL}/admin/reservas`);
                 
                 if (!response.ok) {
@@ -422,12 +377,6 @@
                 }
                 
                 const data = await response.json();
-                console.log('Datos recibidos del backend:', data);
-                
-                if (!Array.isArray(data)) {
-                    throw new Error('Los datos recibidos no son un array');
-                }
-                
                 reservasActuales = data;
                 actualizarTablaReservas();
             } catch (error) {
