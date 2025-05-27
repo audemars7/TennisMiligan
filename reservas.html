@@ -265,9 +265,10 @@
 
         let reservasActuales = [];
 
-        // Función para obtener la fecha actual (forzada a 20/05/2025 para pruebas)
+        // Función para obtener la fecha actual
         function obtenerFechaActual() {
-            return '2025-05-20';
+            const hoy = new Date();
+            return hoy.toISOString().split('T')[0];
         }
 
         // Función para cerrar sesión
@@ -334,12 +335,13 @@
         }
 
         function eliminarReserva(id) {
-            console.log('ID a eliminar:', id);
+            console.log('Tipo de ID:', typeof id, 'Valor:', id);
             if (confirm('¿Estás seguro de que deseas eliminar esta reserva?')) {
                 fetchAuth(`${API_URL}/admin/reservas/${id}`, {
                     method: 'DELETE'
                 })
                 .then(response => {
+                    console.log('Respuesta del servidor:', response.status);
                     if (!response.ok) {
                         return response.json().then(data => Promise.reject(data));
                     }
@@ -350,7 +352,7 @@
                     cargarReservas();
                 })
                 .catch(error => {
-                    console.error('Error:', error);
+                    console.error('Error completo:', error);
                     mostrarMensaje(error.mensaje || 'Error al eliminar la reserva', false);
                 });
             }
@@ -383,10 +385,10 @@
                 <tr>
                     <td>${formatearFecha(reserva.fecha)}</td>
                     <td>${reserva.horario}</td>
-                    <td>${reserva.cancha}</td>
+                    <td>Cancha ${reserva.cancha}</td>
                     <td>${reserva.nombre}</td>
                     <td>
-                        <button onclick="eliminarReserva('${reserva.id}')" class="btn btn-danger">
+                        <button onclick="eliminarReserva(${reserva.id})" class="btn btn-danger">
                             Eliminar
                         </button>
                     </td>
