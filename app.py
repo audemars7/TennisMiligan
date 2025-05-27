@@ -98,24 +98,19 @@ ADMIN_CREDENTIALS = {
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
+        if request.method == 'OPTIONS':
+            return '', 200  # Permitir preflight sin token
         token = None
-        
-        # Verificar si el token está en los headers
         if 'Authorization' in request.headers:
             token = request.headers['Authorization'].replace('Bearer ', '')
-
         if not token:
             return jsonify({'mensaje': 'Token no proporcionado'}), 401
-
         try:
-            # Verificar el token
             data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
             current_user = data['username']
         except:
             return jsonify({'mensaje': 'Token inválido'}), 401
-
         return f(current_user, *args, **kwargs)
-
     return decorated
 
 @app.route("/login", methods=["POST"])
