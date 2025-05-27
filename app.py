@@ -167,6 +167,15 @@ def eliminar_reserva(current_user, id):
 def obtener_reservas_admin(current_user):
     return jsonify(reservas)
 
+@app.errorhandler(404)
+def not_found(e):
+    response = jsonify({'mensaje': 'No encontrado'})
+    response.status_code = 404
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+    response.headers.add("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS")
+    return response
+
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
