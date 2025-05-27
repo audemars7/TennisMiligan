@@ -270,7 +270,7 @@ def hacer_reserva(current_user):
 
 @app.route("/reservas", methods=["GET"])
 @token_required
-def obtener_reservas(current_user):
+def obtener_reservas(current_user, *args, **kwargs):
     fecha_filtro = request.args.get('fecha')
     conn = create_connection()
     if conn is not None:
