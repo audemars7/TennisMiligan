@@ -7,7 +7,11 @@ from functools import wraps
 import os
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, 
+     origins=["https://miligan-frontend.onrender.com", "http://localhost:5000", "http://127.0.0.1:5000"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+     allow_headers=["Content-Type", "Authorization"],
+     supports_credentials=True)
 
 # Clave secreta para JWT (usar variable de entorno en producción)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'miligan_secret_2025')
