@@ -17,7 +17,13 @@ app = Flask(__name__)
 
 # Configuración completa de CORS
 CORS(app, 
-     origins=["https://miligan-frontend.onrender.com", "http://localhost:5000", "http://127.0.0.1:5000"],
+     origins=[
+         "https://miligan-frontend.onrender.com",
+         "http://localhost:5000",
+         "http://127.0.0.1:5000",
+         "http://localhost:3000",
+         "http://localhost:3001"
+     ],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization"],
      supports_credentials=True)
@@ -63,16 +69,52 @@ def init_db():
     if conn is not None:
         try:
             c = conn.cursor()
-            # Crear tabla de reservas
+            # Crear tabla de reservas (ahora con cliente_id)
             c.execute('''
                 CREATE TABLE IF NOT EXISTS reservas (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    cliente_id INTEGER,
                     nombre TEXT NOT NULL,
                     cancha TEXT NOT NULL,
                     horario TEXT NOT NULL,
                     fecha TEXT NOT NULL,
                     estado TEXT DEFAULT 'activa',
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+                )
+            ''')
+            # Crear tabla de clientes (opcional, pero recomendado)
+            c.execute('''
+                CREATE TABLE IF NOT EXISTS clientes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nombre TEXT NOT NULL,
+                    telefono TEXT,
+                    email TEXT
+                )
+            ''')
+            # Crear tabla de compras
+            c.execute('''
+                CREATE TABLE IF NOT EXISTS compras (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    cliente_id INTEGER,
+                    nombre_cliente TEXT,
+                    producto TEXT NOT NULL,
+                    cantidad INTEGER NOT NULL,
+                    precio_unitario REAL NOT NULL,
+                    total REAL NOT NULL,
+                    pagado INTEGER DEFAULT 0,
+                    fecha TEXT NOT NULL,
+                    reserva_id INTEGER,
+                    FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+                )
+            ''')
+            # Crear tabla de productos
+            c.execute('''
+                CREATE TABLE IF NOT EXISTS productos (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nombre TEXT NOT NULL,
+                    tipo TEXT NOT NULL,
+                    precio REAL NOT NULL
                 )
             ''')
             conn.commit()
@@ -222,12 +264,16 @@ def extraer_numero_cancha(cancha):
 @limiter.limit("20 per hour")
 def hacer_reserva(current_user):
     data = request.get_json()
+    cliente_id = data.get("cliente_id")
     nombre = sanitizar_input(data.get("nombre"))
     cancha = sanitizar_input(data.get("cancha"))
     horario = data.get("horario")
     fecha = data.get("fecha", datetime.now().strftime("%Y-%m-%d"))
 
     # Validaciones
+    if cliente_id is not None:
+        if not isinstance(cliente_id, int):
+            return jsonify({"mensaje": "ID de cliente inválido"}), 400
     if not validar_nombre(nombre):
         return jsonify({"mensaje": "Nombre inválido"}), 400
     if not validar_horario(horario):
@@ -251,9 +297,9 @@ def hacer_reserva(current_user):
                 return jsonify({"mensaje": "❌ Este horario ya está reservado para esta cancha"}), 400
             # Insertar nueva reserva
             cursor.execute("""
-                INSERT INTO reservas (nombre, cancha, horario, fecha)
-                VALUES (?, ?, ?, ?)
-            """, (nombre, numero_cancha, horario, fecha))
+                INSERT INTO reservas (cliente_id, nombre, cancha, horario, fecha)
+                VALUES (?, ?, ?, ?, ?)
+            """, (cliente_id, nombre, numero_cancha, horario, fecha))
             conn.commit()
             return jsonify({"mensaje": "✅ Reserva guardada correctamente"}), 201
         except Error as e:
@@ -410,6 +456,305 @@ def eliminar_reserva_admin(current_user, id):
         except Error as e:
             print(e)
             return jsonify({"mensaje": "Error al eliminar la reserva"}), 500
+        finally:
+            conn.close()
+    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
+
+# --- ENDPOINTS PARA CLIENTES ---
+@app.route("/clientes", methods=["POST"])
+@token_required
+def crear_cliente(current_user):
+    data = request.get_json()
+    nombre = sanitizar_input(data.get("nombre"))
+    telefono = sanitizar_input(data.get("telefono"))
+    email = sanitizar_input(data.get("email"))
+    if not validar_nombre(nombre):
+        return jsonify({"mensaje": "Nombre inválido"}), 400
+    conn = create_connection()
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO clientes (nombre, telefono, email)
+                VALUES (?, ?, ?)
+            """, (nombre, telefono, email))
+            conn.commit()
+            return jsonify({"mensaje": "Cliente creado correctamente"}), 201
+        except Error as e:
+            print(e)
+            return jsonify({"mensaje": "Error al crear cliente"}), 500
+        finally:
+            conn.close()
+    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
+
+@app.route("/clientes", methods=["GET"])
+@token_required
+def listar_clientes(current_user):
+    conn = create_connection()
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, nombre, telefono, email FROM clientes")
+            clientes = [
+                {"id": row[0], "nombre": row[1], "telefono": row[2], "email": row[3]}
+                for row in cursor.fetchall()
+            ]
+            return jsonify(clientes)
+        except Error as e:
+            print(e)
+            return jsonify({"mensaje": "Error al obtener clientes"}), 500
+        finally:
+            conn.close()
+    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
+
+@app.route("/clientes/<int:id>", methods=["GET"])
+@token_required
+def obtener_cliente(current_user, id):
+    conn = create_connection()
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, nombre, telefono, email FROM clientes WHERE id = ?", (id,))
+            row = cursor.fetchone()
+            if row:
+                return jsonify({"id": row[0], "nombre": row[1], "telefono": row[2], "email": row[3]})
+            else:
+                return jsonify({"mensaje": "Cliente no encontrado"}), 404
+        except Error as e:
+            print(e)
+            return jsonify({"mensaje": "Error al obtener cliente"}), 500
+        finally:
+            conn.close()
+    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
+
+@app.route("/clientes/<int:id>", methods=["PUT"])
+@token_required
+def actualizar_cliente(current_user, id):
+    data = request.get_json()
+    nombre = data.get("nombre")
+    telefono = data.get("telefono")
+    email = data.get("email")
+    conn = create_connection()
+    if conn:
+        try:
+            c = conn.cursor()
+            c.execute(
+                "UPDATE clientes SET nombre=?, telefono=?, email=? WHERE id=?",
+                (nombre, telefono, email, id)
+            )
+            conn.commit()
+            return jsonify({"mensaje": "Cliente actualizado"}), 200
+        except Exception as e:
+            return jsonify({"mensaje": "Error al actualizar cliente", "error": str(e)}), 500
+        finally:
+            conn.close()
+    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
+
+@app.route("/clientes/<int:id>", methods=["DELETE"])
+@token_required
+def eliminar_cliente(current_user, id):
+    conn = create_connection()
+    if conn:
+        try:
+            c = conn.cursor()
+            c.execute("DELETE FROM clientes WHERE id=?", (id,))
+            conn.commit()
+            return jsonify({"mensaje": "Cliente eliminado"}), 200
+        except Exception as e:
+            return jsonify({"mensaje": "Error al eliminar cliente", "error": str(e)}), 500
+        finally:
+            conn.close()
+    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
+
+# --- ENDPOINTS PARA COMPRAS ---
+@app.route("/compras", methods=["POST"])
+@token_required
+def registrar_compra(current_user):
+    data = request.get_json()
+    cliente_id = data.get("cliente_id")
+    producto_id = data.get("producto_id")
+    cantidad = data.get("cantidad")
+    pagado = int(data.get("pagado", 0))
+    reserva_id = data.get("reserva_id")
+    fecha = data.get("fecha", datetime.now().strftime("%Y-%m-%d"))
+    # Validaciones básicas
+    if not isinstance(producto_id, int) or not isinstance(cantidad, int) or cantidad <= 0:
+        return jsonify({"mensaje": "Datos de compra inválidos"}), 400
+    conn = create_connection()
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
+            # Buscar el producto en la tabla productos
+            cursor.execute("SELECT nombre, precio FROM productos WHERE id = ?", (producto_id,))
+            producto_row = cursor.fetchone()
+            if not producto_row:
+                return jsonify({"mensaje": "El producto no existe"}), 400
+            nombre_producto, precio_unitario = producto_row
+            total = cantidad * precio_unitario
+            cursor.execute("""
+                INSERT INTO compras (cliente_id, nombre_cliente, producto, cantidad, precio_unitario, total, pagado, fecha, reserva_id)
+                VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?)
+            """, (cliente_id, nombre_producto, cantidad, precio_unitario, total, pagado, fecha, reserva_id))
+            conn.commit()
+            return jsonify({"mensaje": "Compra registrada correctamente"}), 201
+        except Error as e:
+            print(e)
+            return jsonify({"mensaje": "Error al registrar compra"}), 500
+        finally:
+            conn.close()
+    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
+
+@app.route("/compras", methods=["GET"])
+@token_required
+def listar_compras(current_user):
+    cliente_id = request.args.get("cliente_id")
+    pagado = request.args.get("pagado")
+    fecha = request.args.get("fecha")
+    conn = create_connection()
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
+            query = "SELECT id, cliente_id, nombre_cliente, producto, cantidad, precio_unitario, total, pagado, fecha, reserva_id FROM compras WHERE 1=1"
+            params = []
+            if cliente_id:
+                query += " AND cliente_id = ?"
+                params.append(cliente_id)
+            if pagado is not None:
+                query += " AND pagado = ?"
+                params.append(pagado)
+            if fecha:
+                query += " AND fecha = ?"
+                params.append(fecha)
+            query += " ORDER BY fecha DESC, id DESC"
+            cursor.execute(query, tuple(params))
+            compras = [
+                {
+                    "id": row[0],
+                    "cliente_id": row[1],
+                    "nombre_cliente": row[2],
+                    "producto": row[3],
+                    "cantidad": row[4],
+                    "precio_unitario": row[5],
+                    "total": row[6],
+                    "pagado": bool(row[7]),
+                    "fecha": row[8],
+                    "reserva_id": row[9]
+                }
+                for row in cursor.fetchall()
+            ]
+            return jsonify(compras)
+        except Error as e:
+            print(e)
+            return jsonify({"mensaje": "Error al obtener compras"}), 500
+        finally:
+            conn.close()
+    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
+
+@app.route("/compras/deuda", methods=["GET"])
+@token_required
+def listar_compras_deuda(current_user):
+    conn = create_connection()
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, cliente_id, nombre_cliente, producto, cantidad, precio_unitario, total, fecha, reserva_id
+                FROM compras WHERE pagado = 0 ORDER BY fecha DESC, id DESC
+            """)
+            compras = [
+                {
+                    "id": row[0],
+                    "cliente_id": row[1],
+                    "nombre_cliente": row[2],
+                    "producto": row[3],
+                    "cantidad": row[4],
+                    "precio_unitario": row[5],
+                    "total": row[6],
+                    "fecha": row[7],
+                    "reserva_id": row[8]
+                }
+                for row in cursor.fetchall()
+            ]
+            return jsonify(compras)
+        except Error as e:
+            print(e)
+            return jsonify({"mensaje": "Error al obtener compras fiadas"}), 500
+        finally:
+            conn.close()
+    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
+
+@app.route("/compras/cliente/<int:cliente_id>", methods=["GET"])
+@token_required
+def listar_compras_cliente(current_user, cliente_id):
+    conn = create_connection()
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, producto, cantidad, precio_unitario, total, pagado, fecha, reserva_id
+                FROM compras WHERE cliente_id = ? ORDER BY fecha DESC, id DESC
+            """, (cliente_id,))
+            compras = [
+                {
+                    "id": row[0],
+                    "producto": row[1],
+                    "cantidad": row[2],
+                    "precio_unitario": row[3],
+                    "total": row[4],
+                    "pagado": bool(row[5]),
+                    "fecha": row[6],
+                    "reserva_id": row[7]
+                }
+                for row in cursor.fetchall()
+            ]
+            return jsonify(compras)
+        except Error as e:
+            print(e)
+            return jsonify({"mensaje": "Error al obtener compras del cliente"}), 500
+        finally:
+            conn.close()
+    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
+
+# --- ENDPOINTS PARA PRODUCTOS ---
+@app.route("/productos", methods=["GET"])
+@token_required
+def listar_productos(current_user):
+    conn = create_connection()
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, nombre, tipo, precio FROM productos")
+            productos = [
+                {"id": row[0], "nombre": row[1], "tipo": row[2], "precio": row[3]}
+                for row in cursor.fetchall()
+            ]
+            return jsonify(productos)
+        except Error as e:
+            print(e)
+            return jsonify({"mensaje": "Error al obtener productos"}), 500
+        finally:
+            conn.close()
+    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
+
+@app.route("/productos", methods=["POST"])
+@token_required
+def agregar_producto(current_user):
+    data = request.get_json()
+    nombre = sanitizar_input(data.get("nombre"))
+    tipo = sanitizar_input(data.get("tipo"))
+    precio = data.get("precio")
+    if not nombre or tipo not in ["grip", "bebida"] or not isinstance(precio, (int, float)) or precio <= 0:
+        return jsonify({"mensaje": "Datos de producto inválidos"}), 400
+    conn = create_connection()
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO productos (nombre, tipo, precio) VALUES (?, ?, ?)", (nombre, tipo, precio))
+            conn.commit()
+            return jsonify({"mensaje": "Producto agregado correctamente"}), 201
+        except Error as e:
+            print(e)
+            return jsonify({"mensaje": "Error al agregar producto"}), 500
         finally:
             conn.close()
     return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
