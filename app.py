@@ -16,8 +16,8 @@ from logging.handlers import RotatingFileHandler
 app = Flask(__name__)
 
 # Configuración CORS definitiva - permitir todo en desarrollo
-CORS(app, 
-     origins=["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003"],
+CORS(app,
+     origins=["https://miligan-frontend.onrender.com"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization"],
      supports_credentials=False)
