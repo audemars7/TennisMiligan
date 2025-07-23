@@ -41,16 +41,20 @@ class Cliente(BaseModel):
     
     @classmethod
     def get_all(cls) -> List[Dict[str, Any]]:
-        query = "SELECT id, nombre, telefono, email, created_at FROM clientes ORDER BY nombre"
+        query = """
+            SELECT id, nombre, apellido, telefono, email, created_at 
+            FROM clientes ORDER BY nombre, apellido
+        """
         try:
             result = db.execute_query(query, fetch_all=True)
             return [
                 {
                     'id': row[0],
                     'nombre': row[1],
-                    'telefono': row[2],
-                    'email': row[3],
-                    'created_at': row[4]
+                    'apellido': row[2],
+                    'telefono': row[3],
+                    'email': row[4],
+                    'created_at': row[5]
                 }
                 for row in result
             ]
@@ -60,16 +64,20 @@ class Cliente(BaseModel):
     
     @classmethod
     def get_by_id(cls, id: int) -> Optional[Dict[str, Any]]:
-        query = "SELECT id, nombre, telefono, email, created_at FROM clientes WHERE id = %s"
+        query = """
+            SELECT id, nombre, apellido, telefono, email, created_at 
+            FROM clientes WHERE id = %s
+        """
         try:
             result = db.execute_query(query, (id,), fetch_one=True)
             if result:
                 return {
                     'id': result[0],
                     'nombre': result[1],
-                    'telefono': result[2],
-                    'email': result[3],
-                    'created_at': result[4]
+                    'apellido': result[2],
+                    'telefono': result[3],
+                    'email': result[4],
+                    'created_at': result[5]
                 }
             return None
         except Exception as e:
@@ -79,13 +87,14 @@ class Cliente(BaseModel):
     @classmethod
     def create(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         query = """
-            INSERT INTO clientes (nombre, telefono, email) 
-            VALUES (%s, %s, %s) RETURNING id
+            INSERT INTO clientes (nombre, apellido, telefono, email) 
+            VALUES (%s, %s, %s, %s) RETURNING id
         """
         try:
             result = db.execute_query(
                 query, 
-                (data['nombre'], data.get('telefono'), data.get('email')),
+                (data['nombre'], data.get('apellido'), 
+                 data.get('telefono'), data.get('email')),
                 fetch_one=True
             )
             if result:
@@ -99,13 +108,14 @@ class Cliente(BaseModel):
     def update(cls, id: int, data: Dict[str, Any]) -> Dict[str, Any]:
         query = """
             UPDATE clientes 
-            SET nombre = %s, telefono = %s, email = %s 
+            SET nombre = %s, apellido = %s, telefono = %s, email = %s 
             WHERE id = %s
         """
         try:
             result = db.execute_query(
                 query,
-                (data['nombre'], data.get('telefono'), data.get('email'), id)
+                (data['nombre'], data.get('apellido'), 
+                 data.get('telefono'), data.get('email'), id)
             )
             if result > 0:
                 return {'mensaje': 'Cliente actualizado correctamente'}

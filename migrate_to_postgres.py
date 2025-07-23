@@ -57,10 +57,17 @@ def create_tables(cursor):
         CREATE TABLE IF NOT EXISTS clientes (
             id SERIAL PRIMARY KEY,
             nombre VARCHAR(255) NOT NULL,
+            apellido VARCHAR(255),
             telefono VARCHAR(50),
             email VARCHAR(255)
         )
     """)
+    
+    # Agregar columna apellido si no existe
+    try:
+        cursor.execute("ALTER TABLE clientes ADD COLUMN apellido VARCHAR(255)")
+    except Exception:
+        pass  # La columna ya existe
     
     # Tabla reservas
     cursor.execute("""

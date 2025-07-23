@@ -91,6 +91,9 @@ def validar_cliente_data(data: Dict[str, Any]) -> Dict[str, Any]:
     if not validar_nombre(data.get('nombre', '')):
         errores.append("Nombre inválido o muy largo")
     
+    if data.get('apellido') and not validar_nombre(data['apellido']):
+        errores.append("Apellido inválido o muy largo")
+    
     if data.get('telefono') and not validar_telefono(data['telefono']):
         errores.append("Formato de teléfono inválido")
     
