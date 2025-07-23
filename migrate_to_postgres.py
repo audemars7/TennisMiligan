@@ -26,8 +26,14 @@ def get_sqlite_data():
     reservas = cursor.fetchall()
     
     # Obtener datos de productos
-    cursor.execute("SELECT id, nombre, precio, stock FROM productos")
-    productos = cursor.fetchall()
+    try:
+        cursor.execute("SELECT id, nombre, precio, stock FROM productos")
+        productos = cursor.fetchall()
+    except sqlite3.OperationalError:
+        # Si no existe la columna stock, usar solo nombre y precio
+        cursor.execute("SELECT id, nombre, precio FROM productos")
+        productos = [(id, nombre, precio, 0) 
+                     for id, nombre, precio in cursor.fetchall()]
     
     # Obtener datos de compras
     cursor.execute("SELECT id, cliente_id, nombre_cliente, producto, cantidad, precio_unitario, total, pagado, fecha FROM compras")
@@ -42,6 +48,59 @@ def get_sqlite_data():
         'compras': compras
     }
 
+def create_tables(cursor):
+    """Crear tablas en PostgreSQL si no existen"""
+    print("📋 Creando tablas...")
+    
+    # Tabla clientes
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS clientes (
+            id SERIAL PRIMARY KEY,
+            nombre VARCHAR(255) NOT NULL,
+            telefono VARCHAR(50),
+            email VARCHAR(255)
+        )
+    """)
+    
+    # Tabla reservas
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS reservas (
+            id SERIAL PRIMARY KEY,
+            cliente_id INTEGER,
+            nombre VARCHAR(255) NOT NULL,
+            cancha VARCHAR(100) NOT NULL,
+            horario VARCHAR(50) NOT NULL,
+            fecha DATE NOT NULL,
+            estado VARCHAR(50) DEFAULT 'activa',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    
+    # Tabla productos
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS productos (
+            id SERIAL PRIMARY KEY,
+            nombre VARCHAR(255) NOT NULL,
+            precio DECIMAL(10,2) NOT NULL,
+            stock INTEGER DEFAULT 0
+        )
+    """)
+    
+    # Tabla compras
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS compras (
+            id SERIAL PRIMARY KEY,
+            cliente_id INTEGER,
+            nombre_cliente VARCHAR(255),
+            producto VARCHAR(255),
+            cantidad INTEGER,
+            precio_unitario DECIMAL(10,2),
+            total DECIMAL(10,2),
+            pagado BOOLEAN DEFAULT FALSE,
+            fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
 def migrate_to_postgres(data):
     """Migrar datos a PostgreSQL"""
     database_url = os.getenv('DATABASE_URL')
@@ -54,6 +113,9 @@ def migrate_to_postgres(data):
     try:
         conn = psycopg2.connect(database_url)
         cursor = conn.cursor()
+        
+        # Crear tablas primero
+        create_tables(cursor)
         
         print("🔄 Migrando datos a PostgreSQL...")
         
