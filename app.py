@@ -15,18 +15,12 @@ from logging.handlers import RotatingFileHandler
 
 app = Flask(__name__)
 
-# Configuración completa de CORS
+# Configuración CORS definitiva - permitir todo en desarrollo
 CORS(app, 
-     origins=[
-         "https://miligan-frontend.onrender.com",
-         "http://localhost:5000",
-         "http://127.0.0.1:5000",
-         "http://localhost:3000",
-         "http://localhost:3001"
-     ],
+     origins=["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization"],
-     supports_credentials=True)
+     supports_credentials=False)
 
 # Configuración de logging
 if not os.path.exists('logs'):
@@ -192,7 +186,11 @@ def cargar_config():
 
 @app.route("/")
 def home():
-    return "¡Bienvenido a Miligan Tennis Academy API!"
+    return jsonify({"mensaje": "¡Bienvenido a Miligan Tennis Academy API!"})
+
+@app.route("/test-cors")
+def test_cors():
+    return jsonify({"mensaje": "CORS funcionando correctamente"})
 
 @app.route("/config", methods=["GET"])
 def obtener_config():
