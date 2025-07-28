@@ -13,17 +13,17 @@ class Config:
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key-change-in-production')
     
     # Base de datos
-    DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///tennis.db')
-    USE_POSTGRES = DATABASE_URL.startswith('postgresql')
+    DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:712119@localhost:5432/tennis_miligan')
+    USE_POSTGRES = True
     
     # CORS
     ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', 
                                'http://localhost:3000,http://localhost:3001,http://localhost:3002').split(',')
     
-    # Rate limiting
-    RATE_LIMIT_DAILY = "200 per day"
-    RATE_LIMIT_HOURLY = "50 per hour"
-    RATE_LIMIT_RESERVATIONS = "20 per hour"
+    # Rate limiting (relajado para desarrollo)
+    RATE_LIMIT_DAILY = "10000 per day"
+    RATE_LIMIT_HOURLY = "1000 per hour"
+    RATE_LIMIT_RESERVATIONS = "200 per hour"
     
     # Logging
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
@@ -43,11 +43,10 @@ class Config:
     MAX_FECHA_LENGTH = 20
     MAX_PRODUCTO_LENGTH = 255
     
-    # Horarios disponibles
+    # Horarios disponibles (6:00 AM a 6:00 PM) en formato de rangos
     HORARIOS_DISPONIBLES = [
-        "06:00", "07:00", "08:00", "09:00", "10:00", "11:00",
-        "12:00", "13:00", "14:00", "15:00", "16:00", "17:00",
-        "18:00", "19:00", "20:00", "21:00", "22:00"
+        "06:00 - 07:00", "07:00 - 08:00", "08:00 - 09:00", "09:00 - 10:00", "10:00 - 11:00", "11:00 - 12:00",
+        "12:00 - 13:00", "13:00 - 14:00", "14:00 - 15:00", "15:00 - 16:00", "16:00 - 17:00", "17:00 - 18:00"
     ]
     
     # Canchas disponibles

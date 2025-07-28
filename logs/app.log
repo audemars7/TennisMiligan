@@ -1,105 +1,118 @@
-2025-07-03 00:20:17,394 ERROR: Unhandled Exception: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again. [in C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\app.py:39]
+2025-07-27 20:20:32,004 INFO: Base de datos PostgreSQL inicializada correctamente [in C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\app.py:135]
+2025-07-27 20:20:32,458 INFO: Base de datos PostgreSQL inicializada correctamente [in C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\app.py:135]
+2025-07-28 02:35:51,821 INFO: Base de datos PostgreSQL inicializada correctamente [in C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\app.py:135]
+2025-07-28 02:36:09,923 INFO: Base de datos PostgreSQL inicializada correctamente [in C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\app.py:135]
+2025-07-28 02:36:10,335 INFO: Base de datos PostgreSQL inicializada correctamente [in C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\app.py:135]
+2025-07-28 03:25:08,568 INFO: Base de datos PostgreSQL inicializada correctamente [in C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\app.py:135]
+2025-07-28 03:37:13,050 ERROR: Unhandled Exception: 429 Too Many Requests: 1000 per 1 hour [in C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\app.py:39]
 Traceback (most recent call last):
-  File "C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\.venv\Lib\site-packages\flask\app.py", line 870, in full_dispatch_request
-    rv = self.dispatch_request()
-  File "C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\.venv\Lib\site-packages\flask\app.py", line 844, in dispatch_request
-    self.raise_routing_exception(req)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
-  File "C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\.venv\Lib\site-packages\flask\app.py", line 453, in raise_routing_exception
-    raise request.routing_exception  # type: ignore[misc]
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\.venv\Lib\site-packages\flask\ctx.py", line 362, in match_request
-    result = self.url_adapter.match(return_rule=True)  # type: ignore
-  File "C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\.venv\Lib\site-packages\werkzeug\routing\map.py", line 629, in match
-    raise NotFound() from None
-werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-2025-07-03 00:20:28,263 ERROR: Unhandled Exception: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again. [in C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\app.py:39]
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 868, in full_dispatch_request
+    rv = self.preprocess_request()
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 1243, in preprocess_request
+    rv = self.ensure_sync(before_func)()
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask_limiter\extension.py", line 1172, in _check_request_limit
+    raise e
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask_limiter\extension.py", line 1169, in _check_request_limit
+    self.__evaluate_limits(endpoint, all_limits)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask_limiter\extension.py", line 1153, in __evaluate_limits
+    raise RateLimitExceeded(
+    ...<2 lines>...
+    )
+flask_limiter.errors.RateLimitExceeded: 429 Too Many Requests: 1000 per 1 hour
+2025-07-28 03:37:13,134 ERROR: Unhandled Exception: 429 Too Many Requests: 1000 per 1 hour [in C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\app.py:39]
 Traceback (most recent call last):
-  File "C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\.venv\Lib\site-packages\flask\app.py", line 870, in full_dispatch_request
-    rv = self.dispatch_request()
-  File "C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\.venv\Lib\site-packages\flask\app.py", line 844, in dispatch_request
-    self.raise_routing_exception(req)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
-  File "C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\.venv\Lib\site-packages\flask\app.py", line 453, in raise_routing_exception
-    raise request.routing_exception  # type: ignore[misc]
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\.venv\Lib\site-packages\flask\ctx.py", line 362, in match_request
-    result = self.url_adapter.match(return_rule=True)  # type: ignore
-  File "C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\.venv\Lib\site-packages\werkzeug\routing\map.py", line 629, in match
-    raise NotFound() from None
-werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-2025-07-05 16:36:31,814 ERROR: Unhandled Exception: 405 Method Not Allowed: The method is not allowed for the requested URL. [in C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\app.py:45]
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 868, in full_dispatch_request
+    rv = self.preprocess_request()
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 1243, in preprocess_request
+    rv = self.ensure_sync(before_func)()
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask_limiter\extension.py", line 1172, in _check_request_limit
+    raise e
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask_limiter\extension.py", line 1169, in _check_request_limit
+    self.__evaluate_limits(endpoint, all_limits)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask_limiter\extension.py", line 1153, in __evaluate_limits
+    raise RateLimitExceeded(
+    ...<2 lines>...
+    )
+flask_limiter.errors.RateLimitExceeded: 429 Too Many Requests: 1000 per 1 hour
+2025-07-28 03:37:13,349 ERROR: Unhandled Exception: 429 Too Many Requests: 1000 per 1 hour [in C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\app.py:39]
 Traceback (most recent call last):
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 870, in full_dispatch_request
-    rv = self.dispatch_request()
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 844, in dispatch_request
-    self.raise_routing_exception(req)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 453, in raise_routing_exception
-    raise request.routing_exception  # type: ignore[misc]
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\ctx.py", line 362, in match_request
-    result = self.url_adapter.match(return_rule=True)  # type: ignore
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\routing\map.py", line 624, in match
-    raise MethodNotAllowed(valid_methods=list(e.have_match_for)) from None
-werkzeug.exceptions.MethodNotAllowed: 405 Method Not Allowed: The method is not allowed for the requested URL.
-2025-07-05 16:36:51,075 ERROR: Unhandled Exception: 405 Method Not Allowed: The method is not allowed for the requested URL. [in C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\app.py:45]
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 868, in full_dispatch_request
+    rv = self.preprocess_request()
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 1243, in preprocess_request
+    rv = self.ensure_sync(before_func)()
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask_limiter\extension.py", line 1172, in _check_request_limit
+    raise e
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask_limiter\extension.py", line 1169, in _check_request_limit
+    self.__evaluate_limits(endpoint, all_limits)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask_limiter\extension.py", line 1153, in __evaluate_limits
+    raise RateLimitExceeded(
+    ...<2 lines>...
+    )
+flask_limiter.errors.RateLimitExceeded: 429 Too Many Requests: 1000 per 1 hour
+2025-07-28 03:37:13,456 ERROR: Unhandled Exception: 429 Too Many Requests: 1000 per 1 hour [in C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\app.py:39]
 Traceback (most recent call last):
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 870, in full_dispatch_request
-    rv = self.dispatch_request()
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 844, in dispatch_request
-    self.raise_routing_exception(req)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 453, in raise_routing_exception
-    raise request.routing_exception  # type: ignore[misc]
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\ctx.py", line 362, in match_request
-    result = self.url_adapter.match(return_rule=True)  # type: ignore
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\routing\map.py", line 624, in match
-    raise MethodNotAllowed(valid_methods=list(e.have_match_for)) from None
-werkzeug.exceptions.MethodNotAllowed: 405 Method Not Allowed: The method is not allowed for the requested URL.
-2025-07-05 16:37:01,302 ERROR: Unhandled Exception: 405 Method Not Allowed: The method is not allowed for the requested URL. [in C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\app.py:45]
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 868, in full_dispatch_request
+    rv = self.preprocess_request()
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 1243, in preprocess_request
+    rv = self.ensure_sync(before_func)()
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask_limiter\extension.py", line 1172, in _check_request_limit
+    raise e
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask_limiter\extension.py", line 1169, in _check_request_limit
+    self.__evaluate_limits(endpoint, all_limits)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask_limiter\extension.py", line 1153, in __evaluate_limits
+    raise RateLimitExceeded(
+    ...<2 lines>...
+    )
+flask_limiter.errors.RateLimitExceeded: 429 Too Many Requests: 1000 per 1 hour
+2025-07-28 03:37:13,534 ERROR: Unhandled Exception: 429 Too Many Requests: 1000 per 1 hour [in C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\app.py:39]
 Traceback (most recent call last):
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 870, in full_dispatch_request
-    rv = self.dispatch_request()
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 844, in dispatch_request
-    self.raise_routing_exception(req)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 453, in raise_routing_exception
-    raise request.routing_exception  # type: ignore[misc]
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\ctx.py", line 362, in match_request
-    result = self.url_adapter.match(return_rule=True)  # type: ignore
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\routing\map.py", line 624, in match
-    raise MethodNotAllowed(valid_methods=list(e.have_match_for)) from None
-werkzeug.exceptions.MethodNotAllowed: 405 Method Not Allowed: The method is not allowed for the requested URL.
-2025-07-05 16:37:30,284 ERROR: Unhandled Exception: 405 Method Not Allowed: The method is not allowed for the requested URL. [in C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\app.py:45]
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 868, in full_dispatch_request
+    rv = self.preprocess_request()
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 1243, in preprocess_request
+    rv = self.ensure_sync(before_func)()
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask_limiter\extension.py", line 1172, in _check_request_limit
+    raise e
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask_limiter\extension.py", line 1169, in _check_request_limit
+    self.__evaluate_limits(endpoint, all_limits)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask_limiter\extension.py", line 1153, in __evaluate_limits
+    raise RateLimitExceeded(
+    ...<2 lines>...
+    )
+flask_limiter.errors.RateLimitExceeded: 429 Too Many Requests: 1000 per 1 hour
+2025-07-28 03:37:13,658 ERROR: Unhandled Exception: 429 Too Many Requests: 1000 per 1 hour [in C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\app.py:39]
 Traceback (most recent call last):
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 870, in full_dispatch_request
-    rv = self.dispatch_request()
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 844, in dispatch_request
-    self.raise_routing_exception(req)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 453, in raise_routing_exception
-    raise request.routing_exception  # type: ignore[misc]
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\ctx.py", line 362, in match_request
-    result = self.url_adapter.match(return_rule=True)  # type: ignore
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\routing\map.py", line 624, in match
-    raise MethodNotAllowed(valid_methods=list(e.have_match_for)) from None
-werkzeug.exceptions.MethodNotAllowed: 405 Method Not Allowed: The method is not allowed for the requested URL.
-2025-07-05 16:41:25,762 ERROR: Unhandled Exception: 405 Method Not Allowed: The method is not allowed for the requested URL. [in C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\app.py:45]
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 868, in full_dispatch_request
+    rv = self.preprocess_request()
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 1243, in preprocess_request
+    rv = self.ensure_sync(before_func)()
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask_limiter\extension.py", line 1172, in _check_request_limit
+    raise e
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask_limiter\extension.py", line 1169, in _check_request_limit
+    self.__evaluate_limits(endpoint, all_limits)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask_limiter\extension.py", line 1153, in __evaluate_limits
+    raise RateLimitExceeded(
+    ...<2 lines>...
+    )
+flask_limiter.errors.RateLimitExceeded: 429 Too Many Requests: 1000 per 1 hour
+2025-07-28 03:37:13,659 ERROR: Unhandled Exception: 429 Too Many Requests: 1000 per 1 hour [in C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\app.py:39]
 Traceback (most recent call last):
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 870, in full_dispatch_request
-    rv = self.dispatch_request()
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 844, in dispatch_request
-    self.raise_routing_exception(req)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 453, in raise_routing_exception
-    raise request.routing_exception  # type: ignore[misc]
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\ctx.py", line 362, in match_request
-    result = self.url_adapter.match(return_rule=True)  # type: ignore
-  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\routing\map.py", line 624, in match
-    raise MethodNotAllowed(valid_methods=list(e.have_match_for)) from None
-werkzeug.exceptions.MethodNotAllowed: 405 Method Not Allowed: The method is not allowed for the requested URL.
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 868, in full_dispatch_request
+    rv = self.preprocess_request()
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 1243, in preprocess_request
+    rv = self.ensure_sync(before_func)()
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask_limiter\extension.py", line 1172, in _check_request_limit
+    raise e
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask_limiter\extension.py", line 1169, in _check_request_limit
+    self.__evaluate_limits(endpoint, all_limits)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\erick\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask_limiter\extension.py", line 1153, in __evaluate_limits
+    raise RateLimitExceeded(
+    ...<2 lines>...
+    )
+flask_limiter.errors.RateLimitExceeded: 429 Too Many Requests: 1000 per 1 hour

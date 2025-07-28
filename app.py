@@ -1,26 +1,26 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-import json
 from datetime import datetime, timedelta
 import jwt
 from functools import wraps
 import os
-import sqlite3
-from sqlite3 import Error
+import psycopg
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-import re
 import logging
 from logging.handlers import RotatingFileHandler
+from dotenv import load_dotenv
+
+# Cargar variables de entorno
+load_dotenv()
 
 app = Flask(__name__)
 
-# Configuración CORS definitiva - permitir todo en desarrollo
-CORS(app,
-     origins=["https://miligan-frontend.onrender.com"],
+# Configuración CORS
+CORS(app, 
+     origins=["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-     allow_headers=["Content-Type", "Authorization"],
-     supports_credentials=False)
+     allow_headers=["Content-Type", "Authorization"])
 
 # Configuración de logging
 if not os.path.exists('logs'):
@@ -39,118 +39,144 @@ def handle_exception(e):
     app.logger.error(f'Unhandled Exception: {str(e)}', exc_info=True)
     return jsonify({"mensaje": "Error interno del servidor"}), 500
 
-# Configuración de la base de datos
-DATABASE = 'tennis.db'
+# Importar configuración centralizada
+from config import get_config
+
+# Configuración centralizada
+config = get_config()
+DATABASE_URL = config.DATABASE_URL
 
 # Configuración del rate limiter
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"]
+    default_limits=[config.RATE_LIMIT_DAILY, config.RATE_LIMIT_HOURLY]
 )
 
-def create_connection():
-    conn = None
-    try:
-        conn = sqlite3.connect(DATABASE)
-        return conn
-    except Error as e:
-        print(e)
-    return conn
+# Configuración JWT
+app.config['SECRET_KEY'] = config.SECRET_KEY
+JWT_SECRET_KEY = config.JWT_SECRET_KEY
 
-def init_db():
-    conn = create_connection()
-    if conn is not None:
-        try:
-            c = conn.cursor()
-            # Crear tabla de reservas (ahora con cliente_id)
-            c.execute('''
-                CREATE TABLE IF NOT EXISTS reservas (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    cliente_id INTEGER,
-                    nombre TEXT NOT NULL,
-                    cancha TEXT NOT NULL,
-                    horario TEXT NOT NULL,
-                    fecha TEXT NOT NULL,
-                    estado TEXT DEFAULT 'activa',
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (cliente_id) REFERENCES clientes(id)
-                )
-            ''')
-            # Crear tabla de clientes (opcional, pero recomendado)
-            c.execute('''
-                CREATE TABLE IF NOT EXISTS clientes (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    nombre TEXT NOT NULL,
-                    telefono TEXT,
-                    email TEXT
-                )
-            ''')
-            # Crear tabla de compras
-            c.execute('''
-                CREATE TABLE IF NOT EXISTS compras (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    cliente_id INTEGER,
-                    nombre_cliente TEXT,
-                    producto TEXT NOT NULL,
-                    cantidad INTEGER NOT NULL,
-                    precio_unitario REAL NOT NULL,
-                    total REAL NOT NULL,
-                    pagado INTEGER DEFAULT 0,
-                    fecha TEXT NOT NULL,
-                    reserva_id INTEGER,
-                    FOREIGN KEY (cliente_id) REFERENCES clientes(id)
-                )
-            ''')
-            # Crear tabla de productos
-            c.execute('''
-                CREATE TABLE IF NOT EXISTS productos (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    nombre TEXT NOT NULL,
-                    tipo TEXT NOT NULL,
-                    precio REAL NOT NULL
-                )
-            ''')
-            conn.commit()
-        except Error as e:
-            print(e)
-        finally:
-            conn.close()
-    else:
-        print("Error! No se pudo crear la conexión a la base de datos.")
-
-# Inicializar la base de datos al arrancar
-init_db()
-
-# Clave secreta para JWT (usar variable de entorno en producción)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'miligan_secret_2025')
-
-# Credenciales de administrador (usar variables de entorno en producción)
+# Credenciales de administrador
 ADMIN_CREDENTIALS = {
     os.environ.get('ADMIN_USER', 'admin1'): os.environ.get('ADMIN_PASSWORD', 'pepito2025')
 }
 
-# Decorador para proteger rutas
+def create_connection():
+    """Crear conexión a PostgreSQL"""
+    try:
+        conn = psycopg.connect(DATABASE_URL)
+        return conn
+    except Exception as e:
+        app.logger.error(f"Error conectando a la base de datos: {e}")
+        return None
+
+def init_db():
+    """Inicializar base de datos con todas las tablas"""
+    conn = create_connection()
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
+            
+            # Tabla clientes
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS clientes (
+                    id SERIAL PRIMARY KEY,
+                    nombre VARCHAR(255) NOT NULL,
+                    apellido VARCHAR(255),
+                    telefono VARCHAR(50),
+                    email VARCHAR(255),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            # Tabla reservas
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS reservas (
+                    id SERIAL PRIMARY KEY,
+                    cliente_id INTEGER REFERENCES clientes(id),
+                    nombre VARCHAR(255) NOT NULL,
+                    cancha VARCHAR(100) NOT NULL,
+                    horario VARCHAR(50) NOT NULL,
+                    fecha VARCHAR(20) NOT NULL,
+                    estado VARCHAR(50) DEFAULT 'activa',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            # Tabla productos
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS productos (
+                    id SERIAL PRIMARY KEY,
+                    nombre VARCHAR(255) NOT NULL,
+                    precio DECIMAL(10,2) NOT NULL,
+                    stock INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            # Tabla compras
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS compras (
+                    id SERIAL PRIMARY KEY,
+                    cliente_id INTEGER REFERENCES clientes(id),
+                    nombre_cliente VARCHAR(255),
+                    producto VARCHAR(255) NOT NULL,
+                    cantidad INTEGER NOT NULL,
+                    precio_unitario DECIMAL(10,2) NOT NULL,
+                    total DECIMAL(10,2) NOT NULL,
+                    pagado INTEGER DEFAULT 0,
+                    fecha VARCHAR(20) NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            conn.commit()
+            app.logger.info("Base de datos PostgreSQL inicializada correctamente")
+        except Exception as e:
+            app.logger.error(f"Error creando tablas: {e}")
+        finally:
+            conn.close()
+
+# Inicializar la base de datos al arrancar
+init_db()
+
 def token_required(f):
+    """Decorador para proteger rutas con JWT"""
     @wraps(f)
     def decorated(*args, **kwargs):
+        # Permitir requests OPTIONS para CORS
         if request.method == 'OPTIONS':
-            return '', 200  # Permitir preflight sin token
+            return f(None, *args, **kwargs)
+            
         token = None
         if 'Authorization' in request.headers:
-            token = request.headers['Authorization'].replace('Bearer ', '')
+            auth_header = request.headers['Authorization']
+            try:
+                token = auth_header.split(" ")[1]
+            except IndexError:
+                return jsonify({'mensaje': 'Token inválido'}), 401
+        
         if not token:
-            return jsonify({'mensaje': 'Token no proporcionado'}), 401
+            return jsonify({'mensaje': 'Token requerido'}), 401
+        
         try:
-            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
+            data = jwt.decode(token, JWT_SECRET_KEY, algorithms=["HS256"])
             current_user = data['username']
-        except:
+        except jwt.ExpiredSignatureError:
+            return jsonify({'mensaje': 'Token expirado'}), 401
+        except jwt.InvalidTokenError:
             return jsonify({'mensaje': 'Token inválido'}), 401
+        
         return f(current_user, *args, **kwargs)
+    
     return decorated
+
+# ==================== RUTAS DE AUTENTICACIÓN ====================
 
 @app.route("/login", methods=["POST"])
 def login():
+    """Login de administrador"""
     auth = request.get_json()
     
     if not auth or not auth.get('username') or not auth.get('password'):
@@ -161,325 +187,57 @@ def login():
         token = jwt.encode({
             'username': auth.get('username'),
             'exp': datetime.utcnow() + timedelta(hours=24)
-        }, app.config['SECRET_KEY'])
+        }, JWT_SECRET_KEY, algorithm="HS256")
         
         return jsonify({'token': token})
     
     return jsonify({'mensaje': 'Credenciales incorrectas'}), 401
 
-# Cargar configuración
-def cargar_config():
-    try:
-        with open('config.json', 'r') as f:
-            return json.load(f)
-    except:
-        return {
-            "whatsapp": "+51999999999",
-            "ubicacion": {
-                "direccion": "Av. Tennis 123, Lima",
-                "coordenadas": {
-                    "lat": "-12.045599",
-                    "lng": "-77.031965"
-                }
-            }
-        }
+# ==================== RUTAS BÁSICAS ====================
 
 @app.route("/")
 def home():
-    return jsonify({"mensaje": "¡Bienvenido a Miligan Tennis Academy API!"})
+    """Ruta principal"""
+    return jsonify({
+        "mensaje": "API de Tennis Miligan funcionando",
+        "database": "PostgreSQL",
+        "status": "online"
+    })
 
 @app.route("/test-cors")
 def test_cors():
+    """Prueba de CORS"""
     return jsonify({"mensaje": "CORS funcionando correctamente"})
 
-@app.route("/config", methods=["GET"])
-def obtener_config():
-    return jsonify(cargar_config())
+# ==================== RUTAS DE CLIENTES ====================
 
-@app.route("/config", methods=["POST"])
-@token_required
-def actualizar_config(current_user):
-    nueva_config = request.get_json()
-    try:
-        with open('config.json', 'w') as f:
-            json.dump(nueva_config, f, indent=4)
-        return jsonify({"mensaje": "Configuración actualizada correctamente"}), 200
-    except:
-        return jsonify({"mensaje": "Error al actualizar la configuración"}), 500
-
-@app.route("/horarios", methods=["GET"])
-@token_required
-def obtener_horarios(current_user):
-    horarios = [
-        "06:00 - 07:00",
-        "07:00 - 08:00",
-        "08:00 - 09:00",
-        "09:00 - 10:00",
-        "10:00 - 11:00",
-        "11:00 - 12:00",
-        "12:00 - 13:00",
-        "13:00 - 14:00",
-        "14:00 - 15:00",
-        "15:00 - 16:00",
-        "16:00 - 17:00",
-        "17:00 - 18:00"
-    ]
-    return jsonify(horarios)
-
-# Validaciones
-def validar_fecha(fecha):
-    try:
-        datetime.strptime(fecha, '%Y-%m-%d')
-        return True
-    except ValueError:
-        return False
-
-def validar_horario(horario):
-    patron = r'^\d{2}:\d{2} - \d{2}:\d{2}$'
-    return bool(re.match(patron, horario))
-
-def validar_nombre(nombre):
-    return bool(nombre and len(nombre) >= 3 and len(nombre) <= 50)
-
-def sanitizar_input(texto):
-    if not texto:
-        return texto
-    return re.sub(r'[<>"/\'%;()&+]', '', texto)
-
-def extraer_numero_cancha(cancha):
-    """Permite aceptar '1', '2', 'Cancha 1', 'Cancha 2', etc."""
-    if not cancha:
-        return None
-    match = re.search(r'(\d+)', str(cancha))
-    if match:
-        num = int(match.group(1))
-        if 1 <= num <= 4:
-            return str(num)
-    return None
-
-@app.route("/reservar", methods=["POST"])
-@token_required
-@limiter.limit("20 per hour")
-def hacer_reserva(current_user):
-    data = request.get_json()
-    cliente_id = data.get("cliente_id")
-    nombre = sanitizar_input(data.get("nombre"))
-    cancha = sanitizar_input(data.get("cancha"))
-    horario = data.get("horario")
-    fecha = data.get("fecha", datetime.now().strftime("%Y-%m-%d"))
-
-    # Validaciones
-    if cliente_id is not None:
-        if not isinstance(cliente_id, int):
-            return jsonify({"mensaje": "ID de cliente inválido"}), 400
-    if not validar_nombre(nombre):
-        return jsonify({"mensaje": "Nombre inválido"}), 400
-    if not validar_horario(horario):
-        return jsonify({"mensaje": "Formato de horario inválido"}), 400
-    if not validar_fecha(fecha):
-        return jsonify({"mensaje": "Formato de fecha inválido"}), 400
-    numero_cancha = extraer_numero_cancha(cancha)
-    if not numero_cancha:
-        return jsonify({"mensaje": "Número de cancha inválido"}), 400
-
-    conn = create_connection()
-    if conn is not None:
-        try:
-            # Verificar si ya existe una reserva
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT id FROM reservas 
-                WHERE cancha = ? AND horario = ? AND fecha = ? AND estado = 'activa'
-            """, (numero_cancha, horario, fecha))
-            if cursor.fetchone() is not None:
-                return jsonify({"mensaje": "❌ Este horario ya está reservado para esta cancha"}), 400
-            # Insertar nueva reserva
-            cursor.execute("""
-                INSERT INTO reservas (cliente_id, nombre, cancha, horario, fecha)
-                VALUES (?, ?, ?, ?, ?)
-            """, (cliente_id, nombre, numero_cancha, horario, fecha))
-            conn.commit()
-            return jsonify({"mensaje": "✅ Reserva guardada correctamente"}), 201
-        except Error as e:
-            print(e)
-            return jsonify({"mensaje": "Error al procesar la reserva"}), 500
-        finally:
-            conn.close()
-    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
-
-@app.route("/reservas", methods=["GET"])
-@token_required
-def obtener_reservas(current_user, *args, **kwargs):
-    fecha_filtro = request.args.get('fecha')
-    conn = create_connection()
-    if conn is not None:
-        try:
-            cursor = conn.cursor()
-            if fecha_filtro:
-                cursor.execute("""
-                    SELECT id, nombre, cancha, horario, fecha, estado
-                    FROM reservas 
-                    WHERE fecha = ? AND estado = 'activa'
-                    ORDER BY horario
-                """, (fecha_filtro,))
-            else:
-                cursor.execute("""
-                    SELECT id, nombre, cancha, horario, fecha, estado
-                    FROM reservas 
-                    WHERE estado = 'activa'
-                    ORDER BY fecha, horario
-                """)
-            
-            reservas = []
-            for row in cursor.fetchall():
-                reservas.append({
-                    "id": row[0],
-                    "nombre": row[1],
-                    "cancha": row[2],
-                    "horario": row[3],
-                    "fecha": row[4],
-                    "estado": row[5]
-                })
-            return jsonify(reservas)
-        except Error as e:
-            print(e)
-            return jsonify({"mensaje": "Error al obtener las reservas"}), 500
-        finally:
-            conn.close()
-    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
-
-@app.route("/admin/reservas", methods=["GET"])
-@token_required
-def obtener_reservas_admin(current_user):
-    return obtener_reservas(current_user)
-
-@app.route("/reservas/tabla", methods=["GET"])
-@token_required
-def obtener_tabla_reservas(current_user):
-    fecha = request.args.get('fecha', datetime.now().strftime("%Y-%m-%d"))
-    
-    if not validar_fecha(fecha):
-        return jsonify({"mensaje": "Formato de fecha inválido"}), 400
-
-    conn = create_connection()
-    if conn is not None:
-        try:
-            cursor = conn.cursor()
-            # Obtener todas las reservas para la fecha específica
-            cursor.execute("""
-                SELECT horario, cancha, nombre, estado
-                FROM reservas 
-                WHERE fecha = ? AND estado = 'activa'
-                ORDER BY horario, cancha
-            """, (fecha,))
-            
-            reservas = cursor.fetchall()
-            
-            # Crear estructura de tabla
-            tabla_reservas = {}
-            horarios = obtener_horarios(current_user).get_json()
-            
-            for horario in horarios:
-                tabla_reservas[horario] = {}
-                for cancha in range(1, 11):  # 10 canchas
-                    tabla_reservas[horario][str(cancha)] = None
-
-            # Llenar la tabla con las reservas
-            for reserva in reservas:
-                horario, cancha, nombre, estado = reserva
-                if horario in tabla_reservas and str(cancha) in tabla_reservas[horario]:
-                    tabla_reservas[horario][str(cancha)] = {
-                        "nombre": nombre,
-                        "estado": estado
-                    }
-
-            return jsonify({
-                "fecha": fecha,
-                "tabla": tabla_reservas
-            })
-        except Error as e:
-            app.logger.error(f"Error al obtener tabla de reservas: {str(e)}")
-            return jsonify({"mensaje": "Error al obtener las reservas"}), 500
-        finally:
-            conn.close()
-    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
-
-@app.route("/admin/reservas/<int:id>", methods=["PUT"])
-@token_required
-def editar_reserva(current_user, id):
-    data = request.get_json()
-    nombre = sanitizar_input(data.get("nombre"))
-    
-    if not validar_nombre(nombre):
-        return jsonify({"mensaje": "Nombre inválido"}), 400
-
-    conn = create_connection()
-    if conn is not None:
-        try:
-            cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE reservas 
-                SET nombre = ? 
-                WHERE id = ? AND estado = 'activa'
-            """, (nombre, id))
-            conn.commit()
-            
-            if cursor.rowcount > 0:
-                return jsonify({"mensaje": "✅ Reserva actualizada correctamente"}), 200
-            return jsonify({"mensaje": "❌ Reserva no encontrada"}), 404
-        except Error as e:
-            print(e)
-            return jsonify({"mensaje": "Error al actualizar la reserva"}), 500
-        finally:
-            conn.close()
-    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
-
-@app.route("/admin/reservas/<int:id>", methods=["DELETE"])
-@token_required
-def eliminar_reserva_admin(current_user, id):
-    conn = create_connection()
-    if conn is not None:
-        try:
-            cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE reservas 
-                SET estado = 'cancelada' 
-                WHERE id = ? AND estado = 'activa'
-            """, (id,))
-            conn.commit()
-            
-            if cursor.rowcount > 0:
-                return jsonify({"mensaje": "✅ Reserva eliminada correctamente"}), 200
-            return jsonify({"mensaje": "❌ Reserva no encontrada"}), 404
-        except Error as e:
-            print(e)
-            return jsonify({"mensaje": "Error al eliminar la reserva"}), 500
-        finally:
-            conn.close()
-    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
-
-# --- ENDPOINTS PARA CLIENTES ---
 @app.route("/clientes", methods=["POST"])
 @token_required
 def crear_cliente(current_user):
+    """Crear nuevo cliente"""
     data = request.get_json()
-    nombre = sanitizar_input(data.get("nombre"))
-    telefono = sanitizar_input(data.get("telefono"))
-    email = sanitizar_input(data.get("email"))
-    if not validar_nombre(nombre):
-        return jsonify({"mensaje": "Nombre inválido"}), 400
+    nombre = data.get("nombre")
+    apellido = data.get("apellido")
+    telefono = data.get("telefono")
+    email = data.get("email")
+    
+    if not nombre:
+        return jsonify({"mensaje": "El nombre es obligatorio"}), 400
+    
     conn = create_connection()
     if conn is not None:
         try:
             cursor = conn.cursor()
             cursor.execute("""
-                INSERT INTO clientes (nombre, telefono, email)
-                VALUES (?, ?, ?)
-            """, (nombre, telefono, email))
+                INSERT INTO clientes (nombre, apellido, telefono, email)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id
+            """, (nombre, apellido, telefono, email))
+            cliente_id = cursor.fetchone()[0]
             conn.commit()
-            return jsonify({"mensaje": "Cliente creado correctamente"}), 201
-        except Error as e:
-            print(e)
+            return jsonify({"id": cliente_id, "mensaje": "Cliente creado correctamente"}), 201
+        except Exception as e:
+            app.logger.error(f"Error al crear cliente: {e}")
             return jsonify({"mensaje": "Error al crear cliente"}), 500
         finally:
             conn.close()
@@ -488,18 +246,19 @@ def crear_cliente(current_user):
 @app.route("/clientes", methods=["GET"])
 @token_required
 def listar_clientes(current_user):
+    """Listar todos los clientes"""
     conn = create_connection()
     if conn is not None:
         try:
             cursor = conn.cursor()
-            cursor.execute("SELECT id, nombre, telefono, email FROM clientes")
+            cursor.execute("SELECT id, nombre, apellido, telefono, email FROM clientes ORDER BY nombre")
             clientes = [
-                {"id": row[0], "nombre": row[1], "telefono": row[2], "email": row[3]}
+                {"id": row[0], "nombre": row[1], "apellido": row[2], "telefono": row[3], "email": row[4]}
                 for row in cursor.fetchall()
             ]
             return jsonify(clientes)
-        except Error as e:
-            print(e)
+        except Exception as e:
+            app.logger.error(f"Error al obtener clientes: {e}")
             return jsonify({"mensaje": "Error al obtener clientes"}), 500
         finally:
             conn.close()
@@ -508,18 +267,19 @@ def listar_clientes(current_user):
 @app.route("/clientes/<int:id>", methods=["GET"])
 @token_required
 def obtener_cliente(current_user, id):
+    """Obtener cliente por ID"""
     conn = create_connection()
     if conn is not None:
         try:
             cursor = conn.cursor()
-            cursor.execute("SELECT id, nombre, telefono, email FROM clientes WHERE id = ?", (id,))
+            cursor.execute("SELECT id, nombre, apellido, telefono, email FROM clientes WHERE id = %s", (id,))
             row = cursor.fetchone()
             if row:
-                return jsonify({"id": row[0], "nombre": row[1], "telefono": row[2], "email": row[3]})
+                return jsonify({"id": row[0], "nombre": row[1], "apellido": row[2], "telefono": row[3], "email": row[4]})
             else:
                 return jsonify({"mensaje": "Cliente no encontrado"}), 404
-        except Error as e:
-            print(e)
+        except Exception as e:
+            app.logger.error(f"Error al obtener cliente: {e}")
             return jsonify({"mensaje": "Error al obtener cliente"}), 500
         finally:
             conn.close()
@@ -528,22 +288,29 @@ def obtener_cliente(current_user, id):
 @app.route("/clientes/<int:id>", methods=["PUT"])
 @token_required
 def actualizar_cliente(current_user, id):
+    """Actualizar cliente"""
     data = request.get_json()
     nombre = data.get("nombre")
+    apellido = data.get("apellido")
     telefono = data.get("telefono")
     email = data.get("email")
+    
+    if not nombre:
+        return jsonify({"mensaje": "El nombre es obligatorio"}), 400
+    
     conn = create_connection()
-    if conn:
+    if conn is not None:
         try:
-            c = conn.cursor()
-            c.execute(
-                "UPDATE clientes SET nombre=?, telefono=?, email=? WHERE id=?",
-                (nombre, telefono, email, id)
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE clientes SET nombre=%s, apellido=%s, telefono=%s, email=%s WHERE id=%s",
+                (nombre, apellido, telefono, email, id)
             )
             conn.commit()
-            return jsonify({"mensaje": "Cliente actualizado"}), 200
+            return jsonify({"mensaje": "Cliente actualizado correctamente"}), 200
         except Exception as e:
-            return jsonify({"mensaje": "Error al actualizar cliente", "error": str(e)}), 500
+            app.logger.error(f"Error al actualizar cliente: {e}")
+            return jsonify({"mensaje": "Error al actualizar cliente"}), 500
         finally:
             conn.close()
     return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
@@ -551,184 +318,303 @@ def actualizar_cliente(current_user, id):
 @app.route("/clientes/<int:id>", methods=["DELETE"])
 @token_required
 def eliminar_cliente(current_user, id):
+    """Eliminar cliente"""
     conn = create_connection()
-    if conn:
+    if conn is not None:
         try:
-            c = conn.cursor()
-            c.execute("DELETE FROM clientes WHERE id=?", (id,))
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM clientes WHERE id=%s", (id,))
             conn.commit()
-            return jsonify({"mensaje": "Cliente eliminado"}), 200
+            return jsonify({"mensaje": "Cliente eliminado correctamente"}), 200
         except Exception as e:
-            return jsonify({"mensaje": "Error al eliminar cliente", "error": str(e)}), 500
+            app.logger.error(f"Error al eliminar cliente: {e}")
+            return jsonify({"mensaje": "Error al eliminar cliente"}), 500
         finally:
             conn.close()
     return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
 
-# --- ENDPOINTS PARA COMPRAS ---
-@app.route("/compras", methods=["POST"])
+# ==================== RUTAS DE RESERVAS ====================
+
+@app.route("/reservar", methods=["POST"])
 @token_required
-def registrar_compra(current_user):
+@limiter.limit("20 per hour")
+def hacer_reserva(current_user):
+    """Crear nueva reserva con verificación de disponibilidad"""
     data = request.get_json()
     cliente_id = data.get("cliente_id")
-    producto_id = data.get("producto_id")
-    cantidad = data.get("cantidad")
-    pagado = int(data.get("pagado", 0))
-    reserva_id = data.get("reserva_id")
-    fecha = data.get("fecha", datetime.now().strftime("%Y-%m-%d"))
-    # Validaciones básicas
-    if not isinstance(producto_id, int) or not isinstance(cantidad, int) or cantidad <= 0:
-        return jsonify({"mensaje": "Datos de compra inválidos"}), 400
+    nombre = data.get("nombre")
+    cancha = data.get("cancha")
+    horario = data.get("horario")
+    fecha = data.get("fecha")
+    
+    if not all([nombre, cancha, horario, fecha]):
+        return jsonify({"mensaje": "Todos los campos son obligatorios"}), 400
+    
+    # Validar que la fecha no sea pasada
+    try:
+        fecha_reserva = datetime.strptime(fecha, "%Y-%m-%d").date()
+        fecha_actual = datetime.now().date()
+        
+        if fecha_reserva < fecha_actual:
+            return jsonify({
+                "mensaje": "No se pueden hacer reservas para fechas pasadas",
+                "fecha_valida": False
+            }), 400
+    except ValueError:
+        return jsonify({"mensaje": "Formato de fecha inválido"}), 400
+    
+    # Verificar disponibilidad del horario
     conn = create_connection()
     if conn is not None:
         try:
             cursor = conn.cursor()
-            # Buscar el producto en la tabla productos
-            cursor.execute("SELECT nombre, precio FROM productos WHERE id = ?", (producto_id,))
-            producto_row = cursor.fetchone()
-            if not producto_row:
-                return jsonify({"mensaje": "El producto no existe"}), 400
-            nombre_producto, precio_unitario = producto_row
-            total = cantidad * precio_unitario
+            
+            # Verificar si ya existe una reserva para esa cancha, fecha y horario
             cursor.execute("""
-                INSERT INTO compras (cliente_id, nombre_cliente, producto, cantidad, precio_unitario, total, pagado, fecha, reserva_id)
-                VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?)
-            """, (cliente_id, nombre_producto, cantidad, precio_unitario, total, pagado, fecha, reserva_id))
+                SELECT id, nombre FROM reservas 
+                WHERE cancha = %s AND fecha = %s AND horario = %s AND estado = 'activa'
+            """, (cancha, fecha, horario))
+            
+            reserva_existente = cursor.fetchone()
+            if reserva_existente:
+                return jsonify({
+                    "mensaje": f"Horario no disponible. Ya existe una reserva para {reserva_existente[1]} en cancha {cancha} a las {horario} el {fecha}",
+                    "disponible": False
+                }), 409
+            
+            # Si está disponible, crear la reserva
+            cursor.execute("""
+                INSERT INTO reservas (cliente_id, nombre, cancha, horario, fecha)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING id
+            """, (cliente_id, nombre, cancha, horario, fecha))
+            reserva_id = cursor.fetchone()[0]
             conn.commit()
-            return jsonify({"mensaje": "Compra registrada correctamente"}), 201
-        except Error as e:
-            print(e)
-            return jsonify({"mensaje": "Error al registrar compra"}), 500
+            
+            return jsonify({
+                "id": reserva_id, 
+                "mensaje": f"Reserva creada correctamente para {nombre} en cancha {cancha} a las {horario} el {fecha}",
+                "disponible": True,
+                "fecha_valida": True
+            }), 201
+            
+        except Exception as e:
+            app.logger.error(f"Error al crear reserva: {e}")
+            return jsonify({"mensaje": "Error al crear reserva"}), 500
         finally:
             conn.close()
     return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
 
-@app.route("/compras", methods=["GET"])
+@app.route("/reservas", methods=["GET"])
 @token_required
-def listar_compras(current_user):
-    cliente_id = request.args.get("cliente_id")
-    pagado = request.args.get("pagado")
-    fecha = request.args.get("fecha")
-    conn = create_connection()
-    if conn is not None:
-        try:
-            cursor = conn.cursor()
-            query = "SELECT id, cliente_id, nombre_cliente, producto, cantidad, precio_unitario, total, pagado, fecha, reserva_id FROM compras WHERE 1=1"
-            params = []
-            if cliente_id:
-                query += " AND cliente_id = ?"
-                params.append(cliente_id)
-            if pagado is not None:
-                query += " AND pagado = ?"
-                params.append(pagado)
-            if fecha:
-                query += " AND fecha = ?"
-                params.append(fecha)
-            query += " ORDER BY fecha DESC, id DESC"
-            cursor.execute(query, tuple(params))
-            compras = [
-                {
-                    "id": row[0],
-                    "cliente_id": row[1],
-                    "nombre_cliente": row[2],
-                    "producto": row[3],
-                    "cantidad": row[4],
-                    "precio_unitario": row[5],
-                    "total": row[6],
-                    "pagado": bool(row[7]),
-                    "fecha": row[8],
-                    "reserva_id": row[9]
-                }
-                for row in cursor.fetchall()
-            ]
-            return jsonify(compras)
-        except Error as e:
-            print(e)
-            return jsonify({"mensaje": "Error al obtener compras"}), 500
-        finally:
-            conn.close()
-    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
-
-@app.route("/compras/deuda", methods=["GET"])
-@token_required
-def listar_compras_deuda(current_user):
+def obtener_reservas(current_user):
+    """Obtener todas las reservas"""
     conn = create_connection()
     if conn is not None:
         try:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT id, cliente_id, nombre_cliente, producto, cantidad, precio_unitario, total, fecha, reserva_id
-                FROM compras WHERE pagado = 0 ORDER BY fecha DESC, id DESC
+                SELECT r.id, r.cliente_id, r.nombre, r.cancha, r.horario, r.fecha, r.estado,
+                       c.nombre as cliente_nombre, c.apellido as cliente_apellido
+                FROM reservas r
+                LEFT JOIN clientes c ON r.cliente_id = c.id
+                ORDER BY r.fecha DESC, r.horario
             """)
-            compras = [
+            reservas = [
                 {
-                    "id": row[0],
-                    "cliente_id": row[1],
-                    "nombre_cliente": row[2],
-                    "producto": row[3],
-                    "cantidad": row[4],
-                    "precio_unitario": row[5],
-                    "total": row[6],
-                    "fecha": row[7],
-                    "reserva_id": row[8]
+                    "id": row[0], "cliente_id": row[1], "nombre": row[2], 
+                    "cancha": row[3], "horario": row[4], "fecha": row[5], 
+                    "estado": row[6], "cliente_nombre": row[7], "cliente_apellido": row[8]
                 }
                 for row in cursor.fetchall()
             ]
-            return jsonify(compras)
-        except Error as e:
-            print(e)
-            return jsonify({"mensaje": "Error al obtener compras fiadas"}), 500
+            return jsonify(reservas)
+        except Exception as e:
+            app.logger.error(f"Error al obtener reservas: {e}")
+            return jsonify({"mensaje": "Error al obtener reservas"}), 500
         finally:
             conn.close()
     return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
 
-@app.route("/compras/cliente/<int:cliente_id>", methods=["GET"])
+@app.route("/horarios-disponibles", methods=["GET"])
 @token_required
-def listar_compras_cliente(current_user, cliente_id):
+def obtener_horarios_disponibles(current_user):
+    """Obtener horarios disponibles para una fecha y cancha específica"""
+    fecha = request.args.get("fecha")
+    cancha = request.args.get("cancha")
+    
+    if not fecha or not cancha:
+        return jsonify({"mensaje": "Fecha y cancha son obligatorios"}), 400
+    
+    # Validar que la fecha no sea pasada
+    try:
+        fecha_reserva = datetime.strptime(fecha, "%Y-%m-%d").date()
+        fecha_actual = datetime.now().date()
+        
+        if fecha_reserva < fecha_actual:
+            return jsonify({
+                "mensaje": "No se pueden consultar horarios para fechas pasadas",
+                "fecha_valida": False,
+                "horarios_disponibles": []
+            }), 400
+    except ValueError:
+        return jsonify({"mensaje": "Formato de fecha inválido", "horarios_disponibles": []}), 400
+    
+    # Horarios disponibles desde configuración centralizada
+    horarios_totales = config.HORARIOS_DISPONIBLES
+    
     conn = create_connection()
     if conn is not None:
         try:
             cursor = conn.cursor()
+            
+            # Obtener horarios ocupados para esa fecha y cancha
             cursor.execute("""
-                SELECT id, producto, cantidad, precio_unitario, total, pagado, fecha, reserva_id
-                FROM compras WHERE cliente_id = ? ORDER BY fecha DESC, id DESC
-            """, (cliente_id,))
-            compras = [
-                {
-                    "id": row[0],
-                    "producto": row[1],
-                    "cantidad": row[2],
-                    "precio_unitario": row[3],
-                    "total": row[4],
-                    "pagado": bool(row[5]),
-                    "fecha": row[6],
-                    "reserva_id": row[7]
-                }
-                for row in cursor.fetchall()
-            ]
-            return jsonify(compras)
-        except Error as e:
-            print(e)
-            return jsonify({"mensaje": "Error al obtener compras del cliente"}), 500
+                SELECT horario FROM reservas 
+                WHERE fecha = %s AND cancha = %s AND estado = 'activa'
+            """, (fecha, cancha))
+            
+            horarios_ocupados = [row[0] for row in cursor.fetchall()]
+            
+            # Filtrar horarios disponibles
+            horarios_disponibles = [h for h in horarios_totales if h not in horarios_ocupados]
+            
+            return jsonify({
+                "fecha": fecha,
+                "cancha": cancha,
+                "horarios_disponibles": horarios_disponibles,
+                "horarios_ocupados": horarios_ocupados,
+                "total_disponibles": len(horarios_disponibles),
+                "fecha_valida": True
+            })
+            
+        except Exception as e:
+            app.logger.error(f"Error al obtener horarios disponibles: {e}")
+            return jsonify({"mensaje": "Error al obtener horarios disponibles"}), 500
         finally:
             conn.close()
     return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
 
-# --- ENDPOINTS PARA PRODUCTOS ---
+@app.route("/verificar-disponibilidad", methods=["GET"])
+@token_required
+def verificar_disponibilidad(current_user):
+    """Verificar si un horario específico está disponible"""
+    fecha = request.args.get("fecha")
+    cancha = request.args.get("cancha")
+    horario = request.args.get("horario")
+    
+    if not all([fecha, cancha, horario]):
+        return jsonify({"mensaje": "Fecha, cancha y horario son obligatorios"}), 400
+    
+    # Validar que la fecha no sea pasada
+    try:
+        fecha_reserva = datetime.strptime(fecha, "%Y-%m-%d").date()
+        fecha_actual = datetime.now().date()
+        
+        if fecha_reserva < fecha_actual:
+            return jsonify({
+                "disponible": False,
+                "mensaje": "No se pueden verificar horarios para fechas pasadas",
+                "fecha_valida": False
+            })
+    except ValueError:
+        return jsonify({
+            "disponible": False,
+            "mensaje": "Formato de fecha inválido",
+            "fecha_valida": False
+        })
+    
+    conn = create_connection()
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
+            
+            # Verificar si existe una reserva para ese horario
+            cursor.execute("""
+                SELECT id, nombre FROM reservas 
+                WHERE fecha = %s AND cancha = %s AND horario = %s AND estado = 'activa'
+            """, (fecha, cancha, horario))
+            
+            reserva_existente = cursor.fetchone()
+            
+            if reserva_existente:
+                return jsonify({
+                    "disponible": False,
+                    "mensaje": f"Horario ocupado por {reserva_existente[1]}",
+                    "reserva_id": reserva_existente[0],
+                    "fecha_valida": True
+                })
+            else:
+                return jsonify({
+                    "disponible": True,
+                    "mensaje": "Horario disponible",
+                    "fecha_valida": True
+                })
+            
+        except Exception as e:
+            app.logger.error(f"Error al verificar disponibilidad: {e}")
+            return jsonify({"mensaje": "Error al verificar disponibilidad"}), 500
+        finally:
+            conn.close()
+    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
+
+@app.route("/admin/reservas/<int:id>", methods=["PUT"])
+@token_required
+def editar_reserva(current_user, id):
+    """Editar reserva"""
+    data = request.get_json()
+    nombre = data.get("nombre")
+    
+    conn = create_connection()
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("UPDATE reservas SET nombre=%s WHERE id=%s", (nombre, id))
+            conn.commit()
+            return jsonify({"mensaje": "Reserva actualizada correctamente"}), 200
+        except Exception as e:
+            app.logger.error(f"Error al actualizar reserva: {e}")
+            return jsonify({"mensaje": "Error al actualizar reserva"}), 500
+        finally:
+            conn.close()
+    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
+
+@app.route("/admin/reservas/<int:id>", methods=["DELETE"])
+@token_required
+def eliminar_reserva_admin(current_user, id):
+    """Eliminar reserva"""
+    conn = create_connection()
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM reservas WHERE id=%s", (id,))
+            conn.commit()
+            return jsonify({"mensaje": "Reserva eliminada correctamente"}), 200
+        except Exception as e:
+            app.logger.error(f"Error al eliminar reserva: {e}")
+            return jsonify({"mensaje": "Error al eliminar reserva"}), 500
+        finally:
+            conn.close()
+    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
+
+# ==================== RUTAS DE PRODUCTOS ====================
+
 @app.route("/productos", methods=["GET"])
 @token_required
 def listar_productos(current_user):
+    """Listar todos los productos"""
     conn = create_connection()
     if conn is not None:
         try:
             cursor = conn.cursor()
-            cursor.execute("SELECT id, nombre, tipo, precio FROM productos")
+            cursor.execute("SELECT id, nombre, precio, stock FROM productos ORDER BY nombre")
             productos = [
-                {"id": row[0], "nombre": row[1], "tipo": row[2], "precio": row[3]}
+                {"id": row[0], "nombre": row[1], "precio": float(row[2]), "stock": row[3]}
                 for row in cursor.fetchall()
             ]
             return jsonify(productos)
-        except Error as e:
-            print(e)
+        except Exception as e:
+            app.logger.error(f"Error al obtener productos: {e}")
             return jsonify({"mensaje": "Error al obtener productos"}), 500
         finally:
             conn.close()
@@ -737,26 +623,264 @@ def listar_productos(current_user):
 @app.route("/productos", methods=["POST"])
 @token_required
 def agregar_producto(current_user):
+    """Agregar nuevo producto"""
     data = request.get_json()
-    nombre = sanitizar_input(data.get("nombre"))
-    tipo = sanitizar_input(data.get("tipo"))
+    nombre = data.get("nombre")
     precio = data.get("precio")
-    if not nombre or tipo not in ["grip", "bebida"] or not isinstance(precio, (int, float)) or precio <= 0:
-        return jsonify({"mensaje": "Datos de producto inválidos"}), 400
+    stock = data.get("stock", 0)
+    
+    if not nombre or not precio:
+        return jsonify({"mensaje": "Nombre y precio son obligatorios"}), 400
+    
     conn = create_connection()
     if conn is not None:
         try:
             cursor = conn.cursor()
-            cursor.execute("INSERT INTO productos (nombre, tipo, precio) VALUES (?, ?, ?)", (nombre, tipo, precio))
+            cursor.execute("""
+                INSERT INTO productos (nombre, precio, stock)
+                VALUES (%s, %s, %s)
+                RETURNING id
+            """, (nombre, precio, stock))
+            producto_id = cursor.fetchone()[0]
             conn.commit()
-            return jsonify({"mensaje": "Producto agregado correctamente"}), 201
-        except Error as e:
-            print(e)
+            return jsonify({"id": producto_id, "mensaje": "Producto agregado correctamente"}), 201
+        except Exception as e:
+            app.logger.error(f"Error al agregar producto: {e}")
             return jsonify({"mensaje": "Error al agregar producto"}), 500
         finally:
             conn.close()
     return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
 
+@app.route("/productos/<int:id>", methods=["PUT"])
+@token_required
+def actualizar_producto(current_user, id):
+    """Actualizar producto existente"""
+    data = request.get_json()
+    nombre = data.get("nombre")
+    precio = data.get("precio")
+    stock = data.get("stock")
+    
+    if not nombre or not precio or stock is None:
+        return jsonify({"mensaje": "Todos los campos son obligatorios"}), 400
+    
+    conn = create_connection()
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
+            # Verificar que el producto existe
+            cursor.execute("SELECT id FROM productos WHERE id = %s", (id,))
+            if not cursor.fetchone():
+                return jsonify({"mensaje": "Producto no encontrado"}), 404
+            
+            # Actualizar producto
+            cursor.execute("""
+                UPDATE productos 
+                SET nombre = %s, precio = %s, stock = %s
+                WHERE id = %s
+            """, (nombre, precio, stock, id))
+            conn.commit()
+            return jsonify({"mensaje": "Producto actualizado correctamente"})
+        except Exception as e:
+            app.logger.error(f"Error al actualizar producto: {e}")
+            return jsonify({"mensaje": "Error al actualizar producto"}), 500
+        finally:
+            conn.close()
+    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
+
+@app.route("/productos/<int:id>", methods=["DELETE"])
+@token_required
+def eliminar_producto(current_user, id):
+    """Eliminar producto"""
+    conn = create_connection()
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
+            # Verificar que el producto existe
+            cursor.execute("SELECT nombre FROM productos WHERE id = %s", (id,))
+            resultado = cursor.fetchone()
+            if not resultado:
+                return jsonify({"mensaje": "Producto no encontrado"}), 404
+            
+            nombre_producto = resultado[0]
+            
+            # Eliminar producto
+            cursor.execute("DELETE FROM productos WHERE id = %s", (id,))
+            conn.commit()
+            return jsonify({"mensaje": f"Producto '{nombre_producto}' eliminado correctamente"})
+        except Exception as e:
+            app.logger.error(f"Error al eliminar producto: {e}")
+            return jsonify({"mensaje": "Error al eliminar producto"}), 500
+        finally:
+            conn.close()
+    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
+
+# ==================== RUTAS DE COMPRAS ====================
+
+@app.route("/compras", methods=["POST"])
+@token_required
+def registrar_compra(current_user):
+    """Registrar nueva compra"""
+    data = request.get_json()
+    cliente_id = data.get("cliente_id")
+    nombre_cliente = data.get("nombre_cliente")
+    producto = data.get("producto")
+    cantidad = data.get("cantidad")
+    precio_unitario = data.get("precio_unitario")
+    total = data.get("total")
+    fecha = data.get("fecha")
+    
+    if not all([nombre_cliente, producto, cantidad, precio_unitario, total, fecha]):
+        return jsonify({"mensaje": "Todos los campos son obligatorios"}), 400
+    
+    conn = create_connection()
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO compras (cliente_id, nombre_cliente, producto, cantidad, precio_unitario, total, fecha)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
+            """, (cliente_id, nombre_cliente, producto, cantidad, precio_unitario, total, fecha))
+            compra_id = cursor.fetchone()[0]
+            conn.commit()
+            return jsonify({"id": compra_id, "mensaje": "Compra registrada correctamente"}), 201
+        except Exception as e:
+            app.logger.error(f"Error al registrar compra: {e}")
+            return jsonify({"mensaje": "Error al registrar compra"}), 500
+        finally:
+            conn.close()
+    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
+
+@app.route("/compras", methods=["GET"])
+@token_required
+def listar_compras(current_user):
+    """Listar todas las compras"""
+    conn = create_connection()
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT c.id, c.cliente_id, c.nombre_cliente, c.producto, c.cantidad, 
+                       c.precio_unitario, c.total, c.pagado, c.fecha,
+                       cl.nombre as cliente_nombre
+                FROM compras c
+                LEFT JOIN clientes cl ON c.cliente_id = cl.id
+                ORDER BY c.fecha DESC
+            """)
+            compras = [
+                {
+                    "id": row[0], "cliente_id": row[1], "nombre_cliente": row[2],
+                    "producto": row[3], "cantidad": row[4], "precio_unitario": float(row[5]),
+                    "total": float(row[6]), "pagado": bool(row[7]), "fecha": row[8],
+                    "cliente_nombre": row[9]
+                }
+                for row in cursor.fetchall()
+            ]
+            return jsonify(compras)
+        except Exception as e:
+            app.logger.error(f"Error al obtener compras: {e}")
+            return jsonify({"mensaje": "Error al obtener compras"}), 500
+        finally:
+            conn.close()
+    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
+
+@app.route("/compras/deuda", methods=["GET"])
+@token_required
+def listar_compras_deuda(current_user):
+    """Listar compras con deuda (no pagadas)"""
+    conn = create_connection()
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT c.id, c.cliente_id, c.nombre_cliente, c.producto, c.cantidad, 
+                       c.precio_unitario, c.total, c.pagado, c.fecha,
+                       cl.nombre as cliente_nombre
+                FROM compras c
+                LEFT JOIN clientes cl ON c.cliente_id = cl.id
+                WHERE c.pagado = 0
+                ORDER BY c.fecha DESC
+            """)
+            compras = [
+                {
+                    "id": row[0], "cliente_id": row[1], "nombre_cliente": row[2],
+                    "producto": row[3], "cantidad": row[4], "precio_unitario": float(row[5]),
+                    "total": float(row[6]), "pagado": bool(row[7]), "fecha": row[8],
+                    "cliente_nombre": row[9]
+                }
+                for row in cursor.fetchall()
+            ]
+            return jsonify(compras)
+        except Exception as e:
+            app.logger.error(f"Error al obtener compras con deuda: {e}")
+            return jsonify({"mensaje": "Error al obtener compras con deuda"}), 500
+        finally:
+            conn.close()
+    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
+
+@app.route("/compras/cliente/<int:cliente_id>", methods=["GET"])
+@token_required
+def listar_compras_cliente(current_user, cliente_id):
+    """Listar compras de un cliente específico"""
+    conn = create_connection()
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT c.id, c.cliente_id, c.nombre_cliente, c.producto, c.cantidad, 
+                       c.precio_unitario, c.total, c.pagado, c.fecha
+                FROM compras c
+                WHERE c.cliente_id = %s
+                ORDER BY c.fecha DESC
+            """, (cliente_id,))
+            compras = [
+                {
+                    "id": row[0], "cliente_id": row[1], "nombre_cliente": row[2],
+                    "producto": row[3], "cantidad": row[4], "precio_unitario": float(row[5]),
+                    "total": float(row[6]), "pagado": bool(row[7]), "fecha": row[8]
+                }
+                for row in cursor.fetchall()
+            ]
+            return jsonify(compras)
+        except Exception as e:
+            app.logger.error(f"Error al obtener compras del cliente: {e}")
+            return jsonify({"mensaje": "Error al obtener compras del cliente"}), 500
+        finally:
+            conn.close()
+    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
+
+@app.route("/compras/<int:id>/pagar", methods=["PUT"])
+@token_required
+def marcar_compra_pagada(current_user, id):
+    """Marcar compra como pagada"""
+    conn = create_connection()
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
+            # Verificar que la compra existe y no está pagada
+            cursor.execute("SELECT id, nombre_cliente, producto, total, pagado FROM compras WHERE id = %s", (id,))
+            compra = cursor.fetchone()
+            
+            if not compra:
+                return jsonify({"mensaje": "Compra no encontrada"}), 404
+            
+            if compra[4]:  # ya está pagada
+                return jsonify({"mensaje": "Esta compra ya está pagada"}), 400
+            
+            # Marcar como pagada
+            cursor.execute("UPDATE compras SET pagado = 1 WHERE id = %s", (id,))
+            conn.commit()
+            
+            return jsonify({
+                "mensaje": f"Compra de {compra[1]} ({compra[2]}) marcada como pagada",
+                "total_pagado": float(compra[3])
+            })
+        except Exception as e:
+            app.logger.error(f"Error al marcar compra como pagada: {e}")
+            return jsonify({"mensaje": "Error al marcar compra como pagada"}), 500
+        finally:
+            conn.close()
+    return jsonify({"mensaje": "Error de conexión a la base de datos"}), 500
+
 if __name__ == "__main__":
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(debug=True, host="0.0.0.0", port=5000) 
