@@ -116,3 +116,4 @@ Traceback (most recent call last):
     ...<2 lines>...
     )
 flask_limiter.errors.RateLimitExceeded: 429 Too Many Requests: 1000 per 1 hour
+2025-07-28 04:02:32,397 INFO: Base de datos PostgreSQL inicializada correctamente [in C:\Users\erick\OneDrive\Desktop\Miligan-Tennis\app.py:140]
