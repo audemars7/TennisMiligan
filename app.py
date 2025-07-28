@@ -18,7 +18,12 @@ app = Flask(__name__)
 
 # Configuración CORS
 CORS(app, 
-     origins=["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"],
+     origins=[
+         "http://localhost:3000", 
+         "http://localhost:3001", 
+         "http://localhost:3002",
+         "https://miligan-frontend.onrender.com"
+     ],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization"])
 
